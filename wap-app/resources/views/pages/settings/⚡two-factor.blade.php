@@ -20,11 +20,13 @@ new #[Title('Two-factor authentication')] class extends Component {
     {
         abort_unless(Features::enabled(Features::twoFactorAuthentication()), Response::HTTP_FORBIDDEN);
 
-        if (Fortify::confirmsTwoFactorAuthentication() && is_null(auth()->user()->two_factor_confirmed_at)) {
-            $disableTwoFactorAuthentication(auth()->user());
+        $user = auth()->user();
+        
+        if (Fortify::confirmsTwoFactorAuthentication() && is_null($user?->two_factor_confirmed_at)) {
+            $disableTwoFactorAuthentication($user);
         }
 
-        $this->twoFactorEnabled = auth()->user()->hasEnabledTwoFactorAuthentication();
+        $this->twoFactorEnabled = $user?->hasEnabledTwoFactorAuthentication() ?? false;
         $this->requiresConfirmation = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
     }
 
@@ -42,9 +44,12 @@ new #[Title('Two-factor authentication')] class extends Component {
      */
     public function disable(DisableTwoFactorAuthentication $disableTwoFactorAuthentication): void
     {
-        $disableTwoFactorAuthentication(auth()->user());
-
-        $this->twoFactorEnabled = false;
+        $user = auth()->user();
+        
+        if ($user) {
+            $disableTwoFactorAuthentication($user);
+            $this->twoFactorEnabled = false;
+        }
     }
 } ?>
 
