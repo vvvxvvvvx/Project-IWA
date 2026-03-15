@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Station extends Model
 {
     public $timestamps = false;
+    protected $table = 'station';
     protected $primaryKey = 'name';
     protected $keyType = 'string';
     public $incrementing = false;
