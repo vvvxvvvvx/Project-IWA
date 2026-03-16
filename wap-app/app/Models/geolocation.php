@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Geolocation extends Model
 {
     public $timestamps = false;
+    protected $table = 'geolocation';
 
     protected $fillable = [
         'station_name',
