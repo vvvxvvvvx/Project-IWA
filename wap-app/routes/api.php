@@ -3,10 +3,13 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\SubscriptionStationController;
+use App\Http\Controllers\MeasurementController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::post('/postWeatherData', [MeasurementController::class, 'store']);
 
 Route::middleware(['auth.subscription'])->group(function () {
     // Haal een lijst op van alle stations die bij een abonnement horen
