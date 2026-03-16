@@ -10,9 +10,9 @@
 
             <!-- employee code -->
             <flux:input
-                name="Employee code"
+                name="employee_code"
                 :label="__('Employee code')"
-                :value="old('Employee code')"
+                :value="old('employee_code')"
                 type="text"
                 required
                 autofocus
