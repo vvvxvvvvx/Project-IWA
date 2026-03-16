@@ -1,0 +1,110 @@
+[
+  {
+    "subscription_id": 5,
+    "station": "102240"
+  },
+  {
+    "subscription_id": 8,
+    "station": "20500"
+  },
+  {
+    "subscription_id": 8,
+    "station": "21730"
+  },
+  {
+    "subscription_id": 8,
+    "station": "28360"
+  },
+  {
+    "subscription_id": 8,
+    "station": "29430"
+  },
+  {
+    "subscription_id": 9,
+    "station": "30890"
+  },
+  {
+    "subscription_id": 4,
+    "station": "62000"
+  },
+  {
+    "subscription_id": 1,
+    "station": "62250"
+  },
+  {
+    "subscription_id": 1,
+    "station": "62350"
+  },
+  {
+    "subscription_id": 6,
+    "station": "62390"
+  },
+  {
+    "subscription_id": 1,
+    "station": "62400"
+  },
+  {
+    "subscription_id": 2,
+    "station": "62500"
+  },
+  {
+    "subscription_id": 3,
+    "station": "62500"
+  },
+  {
+    "subscription_id": 4,
+    "station": "62600"
+  },
+  {
+    "subscription_id": 7,
+    "station": "62670"
+  },
+  {
+    "subscription_id": 2,
+    "station": "62680"
+  },
+  {
+    "subscription_id": 3,
+    "station": "62680"
+  },
+  {
+    "subscription_id": 2,
+    "station": "62690"
+  },
+  {
+    "subscription_id": 2,
+    "station": "62790"
+  },
+  {
+    "subscription_id": 3,
+    "station": "62790"
+  },
+  {
+    "subscription_id": 4,
+    "station": "62790"
+  },
+  {
+    "subscription_id": 2,
+    "station": "62800"
+  },
+  {
+    "subscription_id": 3,
+    "station": "62800"
+  },
+  {
+    "subscription_id": 4,
+    "station": "62800"
+  },
+  {
+    "subscription_id": 1,
+    "station": "63300"
+  },
+  {
+    "subscription_id": 10,
+    "station": "70150"
+  },
+  {
+    "subscription_id": 10,
+    "station": "74820"
+  }
+]
