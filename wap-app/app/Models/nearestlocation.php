@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Nearestlocation extends Model
 {
     public $timestamps = false;
+    protected $table = 'nearestlocation';
 
     protected $fillable = [
         'station_name',
