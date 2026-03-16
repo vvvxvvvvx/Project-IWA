@@ -7,8 +7,12 @@ use App\Http\Controllers\StationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\WeatherDataController;
 
 Route::view('/', 'pages::auth.login')->name('home');
+
+// Generator data ingestion (no auth required)
+Route::post('/postWeatherData', [WeatherDataController::class, 'store']);
 
 // Authenticatie
 Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
