@@ -43,9 +43,9 @@ class FortifyServiceProvider extends ServiceProvider
 
         // Custom authentication: check employee_code + password
         Fortify::authenticateUsing(function (Request $request) {
-            $user = User::where('employee_code', $request->email)->first();
+            $user = User::where('employee_code', $request->input('employee_code'))->first();
 
-            if ($user && Hash::check($request->password, $user->password)) {
+            if ($user && Hash::check($request->input('password'), $user->password)) {
                 return $user;
             }
 
