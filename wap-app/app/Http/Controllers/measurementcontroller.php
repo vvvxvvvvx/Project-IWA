@@ -18,7 +18,27 @@ class MeasurementController extends Controller
 
     // Maximale afwijking TEMP (20%)
     const TEMPERATURE_DEVIATION = 0.20;
-    
+
+    /**
+     * Mapping van generator veldnamen naar database veldnamen.
+     */
+    private array $fieldMap = [
+        'STN'    => 'station',
+        'DATE'   => 'date',
+        'TIME'   => 'time',
+        'TEMP'   => 'temperature',
+        'DEWP'   => 'dewpoint_temperature',
+        'STP'    => 'air_pressure_station',
+        'SLP'    => 'air_pressure_sea_level',
+        'VISIB'  => 'visibility',
+        'WDSP'   => 'wind_speed',
+        'PRCP'   => 'percipation',
+        'SNDP'   => 'snow_depth',
+        'FRSHTT' => 'conditions',
+        'CLDC'   => 'cloud_cover',
+        'WNDDIR' => 'wind_direction',
+    ];
+
     private function celsiusToKelvin(float $celsius): float
     {
         return $celsius + 273.15;
@@ -29,14 +49,35 @@ class MeasurementController extends Controller
         return $kelvin - 273.15;
     }
 
+    /**
+     * Zet generator-formaat om naar intern formaat en vervang "None" strings door null.
+     */
+    private function normalizeData(array $raw): array
+    {
+        $normalized = [];
+
+        foreach ($raw as $generatorKey => $value) {
+            $dbKey = $this->fieldMap[$generatorKey] ?? strtolower($generatorKey);
+
+            // Vervang "None" (string) door null
+            if ($value === 'None' || $value === 'none') {
+                $value = null;
+            }
+
+            $normalized[$dbKey] = $value;
+        }
+
+        return $normalized;
+    }
+
     public function store(Request $request): JsonResponse
     {
-        $batch = $request->json()->all();
+        // FIX 1: Haal de WEATHERDATA array op uit het JSON object
+        $batch = $request->json('WEATHERDATA');
 
-        // Valideer dat het een array is van max 10 stations
         if (!is_array($batch) || count($batch) === 0) {
             return response()->json([
-                'error' => 'Expected a JSON array with measurement data.'
+                'error' => 'Expected a JSON object with a WEATHERDATA array.'
             ], 422);
         }
 
@@ -49,7 +90,9 @@ class MeasurementController extends Controller
         $results = [];
 
         DB::transaction(function () use ($batch, &$results) {
-            foreach ($batch as $data) {
+            foreach ($batch as $rawData) {
+                // FIX 2 & 3: Normaliseer veldnamen en vervang "None" door null
+                $data   = $this->normalizeData($rawData);
                 $result = $this->processMeasurement($data);
                 $results[] = $result;
             }
@@ -91,22 +134,19 @@ class MeasurementController extends Controller
             ->limit(self::EXTRAPOLATION_COUNT)
             ->get();
 
-        // Sla originele waarden op (voor correctie tracking)
-        $originalValues = $data;
-
         // Stap 1: Extrapoleer ontbrekende waarden
         foreach ($extrapolatableFields as $field) {
+            // FIX 3: null check werkt nu correct omdat "None" al omgezet is
             if (!isset($data[$field]) || $data[$field] === null) {
 
-                // Voor temperatuurvelden: extrapoleer in Kelvin, sla op in Celsius
                 if (in_array($field, ['temperature', 'dewpoint_temperature'])) {
                     $extrapolatedValue = $this->extrapolate($previousMeasurements, $field, true);
                 } else {
                     $extrapolatedValue = $this->extrapolate($previousMeasurements, $field);
                 }
-                
+
                 if ($extrapolatedValue !== null) {
-                    $data[$field] = $extrapolatedValue; // Altijd Celsius opslaan
+                    $data[$field] = $extrapolatedValue;
                     $corrections[$field] = [
                         'reason'    => 'missing',
                         'original'  => null,
@@ -119,11 +159,9 @@ class MeasurementController extends Controller
         // Controleer temperatuurafwijking (berekening in Kelvin)
         if (isset($data['temperature']) && $previousMeasurements->count() > 0) {
 
-            // Extrapoleer in Kelvin op basis van opgeslagen Celsius waarden
             $extrapolatedCelsius = $this->extrapolate($previousMeasurements, 'temperature');
 
             if ($extrapolatedCelsius !== null) {
-                // Zet aangeleverde temperatuur ook om naar Kelvin voor de vergelijking
                 $inputKelvin        = $this->celsiusToKelvin($data['temperature']);
                 $extrapolatedKelvin = $this->celsiusToKelvin($extrapolatedCelsius);
 
@@ -132,11 +170,9 @@ class MeasurementController extends Controller
                 if ($deviation >= self::TEMPERATURE_DEVIATION) {
                     $originalCelsius = $data['temperature'];
 
-                    // Bereken gecorrigeerde waarde (±20%)
                     $direction       = $inputKelvin > $extrapolatedKelvin ? 1 : -1;
                     $correctedKelvin = $extrapolatedKelvin * (1 + ($direction * self::TEMPERATURE_DEVIATION));
 
-                    // Sla op in Celsius
                     $data['temperature'] = $this->kelvinToCelsius($correctedKelvin);
 
                     $corrections['temperature'] = [
@@ -190,38 +226,36 @@ class MeasurementController extends Controller
         ];
     }
 
-    
-// Extrapoleer een waarde op basis van de 30 vorige metingen (recente metingen wegen zwaarder)
-private function extrapolate($measurements, string $field, bool $useKelvin = false): ?float
-{
-    $values = $measurements
-        ->whereNotNull($field)
-        ->pluck($field)
-        ->values();
+    /**
+     * Extrapoleer een waarde op basis van de 30 vorige metingen (recente metingen wegen zwaarder).
+     */
+    private function extrapolate($measurements, string $field, bool $useKelvin = false): ?float
+    {
+        $values = $measurements
+            ->whereNotNull($field)
+            ->pluck($field)
+            ->values();
 
-    if ($values->count() === 0) {
-        return null;
+        if ($values->count() === 0) {
+            return null;
+        }
+
+        if ($useKelvin) {
+            $values = $values->map(fn($v) => $this->celsiusToKelvin($v));
+        }
+
+        $totalWeight = 0;
+        $weightedSum = 0;
+        $count       = $values->count();
+
+        foreach ($values as $index => $value) {
+            $weight      = $count - $index;
+            $weightedSum += $value * $weight;
+            $totalWeight += $weight;
+        }
+
+        $result = $totalWeight > 0 ? $weightedSum / $totalWeight : null;
+
+        return ($result !== null && $useKelvin) ? $this->kelvinToCelsius($result) : $result;
     }
-
-    // Zet om naar Kelvin als dat nodig is
-    if ($useKelvin) {
-        $values = $values->map(fn($v) => $this->celsiusToKelvin($v));
-    }
-
-    $totalWeight = 0;
-    $weightedSum = 0;
-    $count       = $values->count();
-
-    foreach ($values as $index => $value) {
-        // Recentste meting krijgt hoogste gewicht
-        $weight      = $count - $index;
-        $weightedSum += $value * $weight;
-        $totalWeight += $weight;
-    }
-
-    $result = $totalWeight > 0 ? $weightedSum / $totalWeight : null;
-
-    // Zet resultaat terug naar Celsius voor opslag
-    return ($result !== null && $useKelvin) ? $this->kelvinToCelsius($result) : $result;
-}
 }
