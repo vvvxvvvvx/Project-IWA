@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->validateCsrfTokens(except: [
+            '/postWeatherData',
+        ]);
         $middleware->alias([
             'auth.subscription' => \App\Http\Middleware\VerifySubscriptionToken::class,
         ]);

@@ -13,8 +13,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Path to the dump files
-        $dumpPath = base_path('../../iwadump');
+        // Path to the dump files from Downloads
+        $dumpPath = 'C:\Users\Trigo\Downloads\IWADBDump';
         
         // Define the exact order of tables to respect foreign key constraints
         $filesToRun = [
@@ -62,6 +62,17 @@ class DatabaseSeeder extends Seeder
                 $this->command->warn('File not found: ' . $file);
             }
         }
+
+        // Re-hash all user passwords to Bcrypt (dump may contain non-Bcrypt hashes)
+        $users = DB::table('users')->get(['id', 'password']);
+        foreach ($users as $user) {
+            if (!str_starts_with($user->password, '$2y$') && !str_starts_with($user->password, '$2b$')) {
+                DB::table('users')
+                    ->where('id', $user->id)
+                    ->update(['password' => bcrypt('password')]);
+            }
+        }
+        $this->command->info('Passwords re-hashed to Bcrypt.');
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         $this->command->info('Database seeding completed successfully.');
