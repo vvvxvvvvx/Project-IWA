@@ -13,8 +13,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Path to the dump files (adjusted to the actual IWADBDump folder in Documents)
-        $dumpPath = base_path('../../Project_WAP/IWADBDump');
+        // Path to the dump files
+        $dumpPath = base_path('../../iwadump');
         
         // Define the exact order of tables to respect foreign key constraints
         $filesToRun = [
