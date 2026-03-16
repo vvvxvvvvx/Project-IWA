@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\measurementController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\StationController;
@@ -47,5 +48,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/companies/{id}', [CompanyController::class, 'show'])->name('companies.show')->whereNumber('id');
 
 });
+
+Route::post('/measurements', [measurementController::class, 'store']);
 
 require __DIR__.'/settings.php';
