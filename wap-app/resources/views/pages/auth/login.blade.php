@@ -1,50 +1,74 @@
-<x-layouts::auth :title="__('Log in')">
-    <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IWA Dashboard &ndash; Inloggen</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body class="login-body">
 
-        <!-- Session Status -->
-        <x-auth-session-status class="text-center" :status="session('status')" />
+<main class="login-card brand-login-card">
 
-        <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
-            @csrf
+    <div class="brand-block login-brand">
+        <img class="iwa-logo" src="/assets/iwa-logo.png" alt="IWA logo">
+        <div>
+            <p class="eyebrow">Internationale Weer Agentschap</p>
+            <h1>IWA Dashboard</h1>
+            <p class="muted">Log in om weerdata, stations, abonnementen en contracten te bekijken.</p>
+        </div>
+    </div>
 
-            <!-- employee code -->
-            <flux:input
-                name="employee_code"
-                :label="__('Employee code')"
-                :value="old('employee_code')"
+    @if ($errors->any())
+        <div class="alert error">
+            {{ $errors->first() }}
+        </div>
+    @endif
+
+    @if (session('status'))
+        <div class="alert error" style="background:rgba(22,163,74,.08);color:#166534;">
+            {{ session('status') }}
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('login.store') }}" class="login-form">
+        @csrf
+
+        <label>
+            <span>Medewerkerscode</span>
+            <input
                 type="text"
+                name="employee_code"
+                value="{{ old('employee_code') }}"
                 required
                 autofocus
+                autocomplete="username"
                 placeholder="A0001"
-            />
+            >
+        </label>
 
-            <!-- Password -->
-            <div class="relative">
-                <flux:input
-                    name="password"
-                    :label="__('Password')"
-                    type="password"
-                    required
-                    :placeholder="__('Password')"
-                    viewable
-                />
+        <label>
+            <span>Wachtwoord</span>
+            <input
+                type="password"
+                name="password"
+                required
+                autocomplete="current-password"
+                placeholder="Wachtwoord"
+            >
+        </label>
 
-                @if (Route::has('password.request'))
-                    <flux:link class="absolute top-0 text-sm end-0" :href="route('password.request')" wire:navigate>
-                        {{ __('Forgot your password?') }}
-                    </flux:link>
-                @endif
-            </div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }} style="width:auto;padding:0;">
+            <span style="color:var(--muted);font-size:14px;margin:0;">Onthoud mij</span>
+        </label>
 
-            <!-- Remember Me -->
-            <flux:checkbox name="remember" :label="__('Remember me')" :checked="old('remember')" />
+        <button type="submit" class="primary-button" style="width:100%;font-size:15px;">
+            Inloggen
+        </button>
+    </form>
 
-            <div class="flex items-center justify-end">
-                <flux:button variant="primary" type="submit" class="w-full" data-test="login-button">
-                    {{ __('Log in') }}
-                </flux:button>
-            </div>
-        </form>
-    </div>
-</x-layouts::auth>
+</main>
+
+</body>
+</html>

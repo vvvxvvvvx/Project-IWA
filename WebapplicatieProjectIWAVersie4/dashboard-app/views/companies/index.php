@@ -1,0 +1,6 @@
+<?php require __DIR__ . '/../shared/partials.php'; ?>
+<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8"><title>Bedrijven - IWA Dashboard</title><link rel="stylesheet" href="/assets/styles.css"></head><body>
+<?php render_brand_header('Klantenbeheer', 'Bedrijvenoverzicht', 'Overzicht van alle bedrijven zodat commerciële medewerkers en super users snel een relatie kunnen opzoeken.'); ?>
+<div class="header-actions"><a class="secondary-button" href="/">Terug naar dashboard</a></div></header>
+<?php render_nav('companies'); ?>
+<main class="dashboard-shell"><article class="panel"><div class="panel-header"><div><h2>Alle bedrijven</h2><p class="muted">Klik op een bedrijf voor contactpersonen, gekoppelde abonnementen en contractgerelateerde informatie.</p></div></div><table class="data-table"><thead><tr><th>Naam</th><th>Stad</th><th>Land</th><th>E-mail</th></tr></thead><tbody><?php foreach ($companies as $company): ?><tr><td><a href="/companies/<?= e((string)$company['id']) ?>"><?= e($company['name']) ?></a></td><td><?= e($company['city']) ?></td><td><?= e($company['country_name']) ?></td><td><?= e($company['email']) ?></td></tr><?php endforeach; ?></tbody></table></article></main></body></html>
