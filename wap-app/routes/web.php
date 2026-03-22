@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\measurementController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\SuperUserViewController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\StationController;
 use App\Http\Controllers\SubscriptionController;
@@ -54,6 +55,11 @@ Route::middleware(['auth'])->group(function () {
     // Bedrijven
     Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
     Route::get('/companies/{id}', [CompanyController::class, 'show'])->name('companies.show')->whereNumber('id');
+
+    // Super Users
+    Route::get('/super-users', [SuperUserViewController::class, 'index'])->name('super-users.index');
+
+    
 
     // Measurements
     Route::post('/measurements', [measurementController::class, 'store']);
