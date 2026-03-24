@@ -60,14 +60,6 @@
             </div>
         </div>
         <div class="metric-card">
-            <div class="metric-icon">℃</div>
-            <div>
-                <span class="metric-label">Gemiddelde temperatuur</span>
-                <strong class="metric-value" id="metricAverageTemp">{{ $overview['average_temp'] ?? '-' }}</strong>
-                <span class="metric-change info">Over alle stations</span>
-            </div>
-        </div>
-        <div class="metric-card">
             <div class="metric-icon">⌁</div>
             <div>
                 <span class="metric-label">Datakwaliteit</span>

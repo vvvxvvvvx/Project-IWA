@@ -58,8 +58,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Super Users
     Route::get('/super-users', [SuperUserViewController::class, 'index'])->name('super-users.index');
-
-    
+    Route::post('/super-users/toevoegen', [SuperUserViewController::class, 'toevoegen'])->name('super-users.toevoegen');
+    Route::post('/super-users/{id}', [SuperUserViewController::class, 'verwijder'])->name('super-users.verwijder')->whereNumber('id');
+    Route::post('/super-users/{id}/bewerken', [SuperUserViewController::class, 'bewerkenVerify'])->name('super-users.bewerken')->whereNumber('id');
 
     // Measurements
     Route::post('/measurements', [measurementController::class, 'store']);
