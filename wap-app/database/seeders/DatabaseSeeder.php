@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Path to the dump files from Downloads
-        $dumpPath = 'C:\Users\Wesley\Downloads\IWADBDump';
+        $dumpPath = 'C:\Users\Gino\Downloads\IWADBDump';
 
         // Define the exact order of tables to respect foreign key constraints
         $filesToRun = [

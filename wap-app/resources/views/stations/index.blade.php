@@ -14,9 +14,43 @@
     <div class="panel-header">
         <div>
             <h2>Alle weerstations</h2>
-            <p class="muted">Welk station stuurt welke data, de laatst ontvangen temperatuur en of er missing data of piekmetingen zijn gedetecteerd.</p>
+            <p class="muted">
+                Overzicht van alle weerstations met hun laatste meting en de huidige datastatus.
+                Gebruik de filter om alleen stations met een bepaalde status te tonen.
+            </p>
         </div>
     </div>
+
+    {{-- Hier tot beneden is de nieuwe FILTER sectie toegevoegd voor de status van de stations. De rest van de code is ongewijzigd gebleven. --}}
+
+    <form method="GET" action="{{ route('stations.index') }}" class="filter-form" style="margin-bottom: 1rem;">
+        <div style="display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;">
+            <div>
+                <label for="status" style="display:block; font-weight:600; margin-bottom:0.35rem;">Filter op status</label>
+                <select name="status" id="status" class="form-control">
+                    <option value="">Alle statussen</option>
+                    <option value="ok" {{ request('status') === 'ok' ? 'selected' : '' }}>OK</option>
+                    <option value="missing" {{ request('status') === 'missing' ? 'selected' : '' }}>Missing</option>
+                    <option value="peak" {{ request('status') === 'peak' ? 'selected' : '' }}>Peak</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:0.5rem;">
+                <button type="submit" class="primary-button">Filter toepassen</button>
+                <a href="{{ route('stations.index') }}" class="secondary-button">Reset</a>
+            </div>
+        </div>
+
+        <div class="muted" style="margin-top: 0.75rem;">
+            <strong>Betekenis van de statussen:</strong><br>
+            <strong>OK</strong> = Er is geen ontbrekende data en geen piekmeting gevonden.<br>
+            <strong>Missing</strong> = Er ontbreekt meetdata in de laatste meting.<br>
+            <strong>Peak</strong> = Er is een opvallende piek in de temperatuur gedetecteerd.
+        </div>
+    </form>
+
+     {{-- Tot hier --}}
+
     <div class="table-wrapper">
         <table class="data-table">
             <thead>
@@ -35,7 +69,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($stations as $station)
+                @forelse ($stations as $station)
                 <tr>
                     <td><a href="{{ route('stations.show', $station->stn) }}">{{ $station->stn }}</a></td>
                     <td>{{ $station->location_label ?? 'Onbekend' }}</td>
@@ -57,7 +91,11 @@
                         @endif
                     </td>
                 </tr>
-                @endforeach
+                @empty
+                <tr>
+                    <td colspan="11" class="muted" style="text-align:center;">Geen stations gevonden voor deze filter.</td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>
