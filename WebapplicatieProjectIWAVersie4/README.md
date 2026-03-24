@@ -247,3 +247,6 @@ php scripts/reset_generator_runtime_data.php
 ```
 
 Start daarna de webapp en vervolgens de generator. De commerciële importdata (bedrijven, contacten, abonnementen, landen en station-metadata) blijft behouden.
+
+# Dit werkte op 19-3-26 voor me: (Wesley)
+php artisan serve
