@@ -114,7 +114,6 @@ public class WeatherGeneratorApplication
 	public File getLocalFile(String filename) {
 		return new File(this.path, filename);
 	}
-
 	public static void main(String[] args) {
 		getInstance();
 	}
