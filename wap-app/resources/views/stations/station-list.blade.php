@@ -1,3 +1,4 @@
+{{-- Overzichtspagina voor stations met statusfilter. --}}
 @extends('layouts.iwa')
 
 @section('title', 'Stations')

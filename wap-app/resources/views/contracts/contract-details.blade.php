@@ -1,3 +1,4 @@
+{{-- Detailpagina voor één contract met activity-log. --}}
 @extends('layouts.iwa')
 
 @section('title', $contract->identifier)

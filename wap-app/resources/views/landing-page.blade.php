@@ -1,3 +1,4 @@
+{{-- Eenvoudige landingspagina; root route redirect nu meestal door naar login. --}}
 {{--
     Eenvoudige fallback-welkomstpagina.
     Deze vervangt de standaard Laravel demo-pagina met tutorials en voorbeeldlinks.

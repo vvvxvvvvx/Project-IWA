@@ -1,3 +1,4 @@
+{{-- Overzichtspagina voor alle bedrijven. Als je route('companies.index') wijzigt, pas dan ook CompanyController@index aan. --}}
 {{--
     Overzicht van alle bedrijven.
 --}}

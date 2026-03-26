@@ -1,3 +1,4 @@
+{{-- Detailpagina voor één station inclusief recente metingen. --}}
 @extends('layouts.iwa')
 
 @section('title', $station->stn)

@@ -1,3 +1,4 @@
+{{-- Overzichtspagina voor contracten. Houd route('contracts.index') en ContractController@index in sync. --}}
 @extends('layouts.iwa')
 
 @section('title', 'Contracten')

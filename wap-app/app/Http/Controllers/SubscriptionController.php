@@ -78,7 +78,8 @@ class SubscriptionController extends Controller
             'total_revenue'       => $subscriptions->sum('price'),
         ];
 
-        return view('subscriptions.index', compact('subscriptions', 'types', 'summary'));
+        // Let op: deze lijstview gebruikt een expliciete naam zodat index/detail/types niet vaag blijven.
+        return view('subscriptions.subscription-list', compact('subscriptions', 'types', 'summary'));
     }
 
     /**
@@ -86,7 +87,7 @@ class SubscriptionController extends Controller
      *
      * Deze pagina gebruikt hetzelfde token als de edit-pagina.
      * Nieuwe velden of extra knoppen moeten daarom zowel hier als in
-     * resources/views/subscriptions/form.blade.php worden bijgehouden.
+     * resources/views/subscriptions/subscription-form.blade.php worden bijgehouden.
      */
     public function show(string $identifier): View
     {
@@ -114,7 +115,7 @@ class SubscriptionController extends Controller
 
         $allTypes = DB::table('subscription_types')->orderBy('name')->get();
 
-        return view('subscriptions.detail', compact('subscription', 'stations', 'activity', 'allTypes'));
+        return view('subscriptions.subscription-details', compact('subscription', 'stations', 'activity', 'allTypes'));
     }
 
     /**
@@ -130,7 +131,7 @@ class SubscriptionController extends Controller
      *
      * Als je extra verplichte databasevelden toevoegt, pas dan ook:
      * - validateSubscription()
-     * - resources/views/subscriptions/form.blade.php
+     * - resources/views/subscriptions/subscription-form.blade.php
      */
     public function store(Request $request): RedirectResponse
     {
@@ -216,8 +217,8 @@ class SubscriptionController extends Controller
      * Genereer een nieuw token en sla dit direct op in subscriptions.token.
      *
      * De knop hiervoor staat op:
-     * - resources/views/subscriptions/detail.blade.php
-     * - resources/views/subscriptions/form.blade.php
+     * - resources/views/subscriptions/subscription-details.blade.php
+     * - resources/views/subscriptions/subscription-form.blade.php
      */
     public function regenerateToken(string $identifier): RedirectResponse
     {
@@ -277,7 +278,7 @@ class SubscriptionController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('subscriptions.types', compact('types'));
+        return view('subscriptions.subscription-type-list', compact('types'));
     }
 
     /**

@@ -1,3 +1,4 @@
+{{-- Beheerpagina voor super users / gebruikersoverzicht. --}}
 @extends('layouts.iwa')
 
 @section('title', 'Superusers')
