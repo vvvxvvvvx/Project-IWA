@@ -10,7 +10,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WeatherDataController;
-use App\Http\Controllers\measurementcontroller;
+use App\Http\Controllers\MeasurementController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -93,5 +93,5 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::post('/weather-data', [WeatherDataController::class, 'store'])->name('weather-data.store');
-    Route::get('/measurements', [measurementcontroller::class, 'index'])->name('measurements.index');
+    Route::get('/measurements', [MeasurementController::class, 'index'])->name('measurements.index');
 });

@@ -1,5 +1,19 @@
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| SubscriptionController
+|--------------------------------------------------------------------------
+|
+| Beheert abonnementen, abonnementtypes en tokenacties.
+|
+| Als je hier route-namen, formulier-velden of tokenlogica wijzigt, pas dan
+| ook aan:
+| - routes/web.php
+| - resources/views/subscriptions/*
+| - de subscriptions en subscription_types tabellen
+|
+*/
 namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
@@ -108,7 +122,7 @@ class SubscriptionController extends Controller
      */
     public function create(): View
     {
-        return view('subscriptions.form', $this->subscriptionFormData());
+        return view('subscriptions.subscription-form', $this->subscriptionFormData());
     }
 
     /**
@@ -148,7 +162,7 @@ class SubscriptionController extends Controller
         $subscription = DB::table('subscriptions')->where('identifier', $identifier)->first();
         abort_if(! $subscription, 404);
 
-        return view('subscriptions.form', $this->subscriptionFormData($subscription));
+        return view('subscriptions.subscription-form', $this->subscriptionFormData($subscription));
     }
 
     /**
@@ -272,7 +286,7 @@ class SubscriptionController extends Controller
     public function typesCreate(): View
     {
         $type = null;
-        return view('subscriptions.type-form', compact('type'));
+        return view('subscriptions.subscription-type-form', compact('type'));
     }
 
     /**
@@ -303,7 +317,7 @@ class SubscriptionController extends Controller
         $type = DB::table('subscription_types')->where('id', $id)->first();
         abort_if(! $type, 404);
 
-        return view('subscriptions.type-form', compact('type'));
+        return view('subscriptions.subscription-type-form', compact('type'));
     }
 
     /**

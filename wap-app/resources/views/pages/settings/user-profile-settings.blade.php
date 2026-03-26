@@ -1,3 +1,6 @@
+{{--
+    Instellingenpagina voor profielgegevens van de gebruiker.
+--}}
 <?php
 
 use App\Concerns\ProfileValidationRules;
@@ -120,7 +123,7 @@ new #[Title('Profile settings')] class extends Component {
         </form>
 
         @if ($this->showDeleteUser)
-            <livewire:pages::settings.delete-user-form />
+            <livewire:pages::settings.account-deletion-form />
         @endif
     </x-pages::settings.layout>
 </section>

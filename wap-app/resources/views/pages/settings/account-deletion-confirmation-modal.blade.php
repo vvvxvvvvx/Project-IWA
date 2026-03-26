@@ -1,3 +1,7 @@
+{{--
+    Bevestigingsvenster voor accountverwijdering.
+    Als je de submit-actie wijzigt, controleer dan ook ProfileController en de profielroutes.
+--}}
 <?php
 
 use App\Concerns\PasswordValidationRules;

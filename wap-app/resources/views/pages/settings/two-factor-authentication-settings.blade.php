@@ -1,3 +1,7 @@
+{{--
+    Instellingenpagina voor twee-factor-authenticatie.
+    Recovery-codes staan in resources/views/pages/settings/two-factor/recovery-code-list.blade.php.
+--}}
 <?php
 
 use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
@@ -73,7 +77,7 @@ new #[Title('Two-factor authentication')] class extends Component {
                         {{ __('With two-factor authentication enabled, you will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.') }}
                     </flux:text>
 
-                    <livewire:pages::settings.two-factor.recovery-codes :$requiresConfirmation />
+                    <livewire:pages::settings.two-factor.recovery-code-list :$requiresConfirmation />
 
                     <div class="flex justify-start">
                         <flux:button
@@ -107,7 +111,7 @@ new #[Title('Two-factor authentication')] class extends Component {
                         </flux:button>
                     </flux:modal.trigger>
 
-                    <livewire:pages::settings.two-factor-setup-modal :requires-confirmation="$requiresConfirmation" />
+                    <livewire:pages::settings.two-factor-authentication-setup-modal :requires-confirmation="$requiresConfirmation" />
                 </div>
             @endif
         </div>

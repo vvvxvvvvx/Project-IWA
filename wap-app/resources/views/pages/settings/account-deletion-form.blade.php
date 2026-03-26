@@ -1,3 +1,7 @@
+{{--
+    Korte sectie om accountverwijdering te starten.
+    De bevestigingsstap staat in account-deletion-confirmation-modal.blade.php.
+--}}
 <?php
 
 use Livewire\Component;
@@ -16,5 +20,5 @@ new class extends Component {}; ?>
         </flux:button>
     </flux:modal.trigger>
 
-    <livewire:pages::settings.delete-user-modal />
+    <livewire:pages::settings.account-deletion-confirmation-modal />
 </section>

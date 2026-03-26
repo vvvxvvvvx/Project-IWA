@@ -1,3 +1,7 @@
+{{--
+    Instellingenpagina voor het uiterlijk van de gebruikersinterface.
+    Bestandsnaam is expres volledig uitgeschreven om onduidelijkheid te voorkomen.
+--}}
 <?php
 
 use Livewire\Component;
