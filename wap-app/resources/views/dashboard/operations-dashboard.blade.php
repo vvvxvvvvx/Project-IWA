@@ -1,3 +1,4 @@
+{{-- Hoofddashboard van de operationele IWA-webapp. --}}
 <!DOCTYPE html>
 <html lang="nl">
 <head>

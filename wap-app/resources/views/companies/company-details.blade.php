@@ -1,3 +1,4 @@
+{{-- Detailpagina van één bedrijf inclusief contactpersonen en gekoppelde abonnementen. --}}
 {{--
     Detailpagina van een bedrijf.
 

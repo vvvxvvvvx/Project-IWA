@@ -1,3 +1,4 @@
+{{-- Detailpagina voor één abonnement inclusief stations en activiteit. --}}
 {{--
     Detailpagina van een abonnement.
 

@@ -34,7 +34,8 @@ class CompanyController extends Controller
             ->orderBy('companies.name')
             ->get();
 
-        return view('companies.index', compact('companies'));
+        // Let op: deze view heet bewust company-list.blade.php voor duidelijkere naamgeving.
+        return view('companies.company-list', compact('companies'));
     }
 
     /**
@@ -77,7 +78,7 @@ class CompanyController extends Controller
             )
             ->get();
 
-        return view('companies.detail', compact('company', 'contacts', 'subscriptions'));
+        return view('companies.company-details', compact('company', 'contacts', 'subscriptions'));
     }
 
     /**

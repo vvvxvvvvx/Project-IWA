@@ -31,7 +31,8 @@ class ContractController extends Controller
             ->orderByDesc('subscriptions.start_date')
             ->get();
 
-        return view('contracts.index', compact('contracts'));
+        // Contractoverzicht gebruikt een expliciete viewnaam zodat direct duidelijk is wat dit bestand toont.
+        return view('contracts.contract-list', compact('contracts'));
     }
 
     public function show(string $identifier)
@@ -61,6 +62,6 @@ class ContractController extends Controller
             ->limit(25)
             ->get();
 
-        return view('contracts.detail', compact('contract', 'activity'));
+        return view('contracts.contract-details', compact('contract', 'activity'));
     }
 }

@@ -1,3 +1,4 @@
+{{-- Overzichtspagina voor alle abonnementtypes. --}}
 {{--
     Los overzicht van abonnementtypes.
 --}}

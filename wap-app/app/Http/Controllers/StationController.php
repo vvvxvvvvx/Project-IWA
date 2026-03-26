@@ -49,7 +49,8 @@ class StationController extends Controller
             ->orderBy('station.name')
             ->get();
 
-        return view('stations.index', [
+        // Stationsoverzicht gebruikt een expliciete viewnaam; pas deze ook aan als je de bestandsnaam wijzigt.
+        return view('stations.station-list', [
             'stations' => $stations,
             'selectedStatus' => $status,
         ]);
@@ -88,7 +89,7 @@ class StationController extends Controller
             ->get()
             ->toArray();
 
-        return view('stations.detail', compact('station', 'readings'));
+        return view('stations.station-details', compact('station', 'readings'));
     }
 
     public function download(Request $request, string $stn): StreamedResponse
