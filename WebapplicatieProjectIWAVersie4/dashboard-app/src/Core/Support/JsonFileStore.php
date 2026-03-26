@@ -12,6 +12,7 @@ final class JsonFileStore
     private static string $basePath;
     private static array $config;
     private static ?PDO $pdo = null;
+    private static array $memoryCache = [];
 
     public static function bootstrap(string $basePath, array $config): void
     {
@@ -34,17 +35,23 @@ final class JsonFileStore
 
     public static function all(string $dataset): array
     {
+        if (array_key_exists($dataset, self::$memoryCache)) {
+            return self::$memoryCache[$dataset];
+        }
+
         $statement = self::$pdo->prepare('SELECT payload_json FROM app_json_store WHERE dataset = :dataset LIMIT 1');
         $statement->execute(['dataset' => $dataset]);
         $row = $statement->fetch();
 
         if ($row === false) {
             self::ensureDatasetExists($dataset);
+            self::$memoryCache[$dataset] = [];
             return [];
         }
 
         $decoded = json_decode((string) $row['payload_json'], true);
-        return is_array($decoded) ? $decoded : [];
+        self::$memoryCache[$dataset] = is_array($decoded) ? $decoded : [];
+        return self::$memoryCache[$dataset];
     }
 
     public static function write(string $dataset, array $records): void
@@ -56,8 +63,10 @@ final class JsonFileStore
 
         $statement->execute([
             'dataset' => $dataset,
-            'payload_json' => json_encode($records, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            'payload_json' => json_encode($records, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
         ]);
+
+        self::$memoryCache[$dataset] = $records;
     }
 
     public static function nextId(string $dataset): int
