@@ -11,7 +11,8 @@ class DashboardController extends Controller
     public function index()
     {
         $data = $this->buildDashboardData();
-        return view('dashboard', $data);
+        // Dashboardview staat nu in resources/views/dashboard/operations-dashboard.blade.php.
+        return view('dashboard.operations-dashboard', $data);
     }
 
     public function apiOverview()

@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Path to the dump files from Downloads
-        $dumpPath = 'C:\Users\Gino_\Downloads\IWADBDump';
+        $dumpPath = 'C:\Users\Gino\Downloads\IWADBDump';
 
         // Define the exact order of tables to respect foreign key constraints
         $filesToRun = [
@@ -42,12 +42,15 @@ class DatabaseSeeder extends Seeder
             if (File::exists($filePath)) {
                 $this->command->info('Seeding from: ' . $file);
 
+
                 // Read file contents
                 $sql = File::get($filePath);
+
 
                 // Since these are complete mysqldumps, we extract ONLY the insert statements
                 // to prevent DROP TABLE and CREATE TABLE commands from destroying our new migrations.
                 preg_match_all('/INSERT INTO.*?VALUES.*?;\r?\n/is', $sql, $matches);
+
 
                 if (!empty($matches[0])) {
                     foreach ($matches[0] as $insertQuery) {

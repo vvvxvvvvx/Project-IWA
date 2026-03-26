@@ -10,6 +10,15 @@ function format_datetime(?string $value): string {
     }
 }
 function current_role(): ?string { return $_SESSION['user_role'] ?? null; }
+function flash_set(string $type, string $message): void { $_SESSION['flash'] = ['type' => $type, 'message' => $message]; }
+function flash_get(): ?array {
+    if (!isset($_SESSION['flash']) || !is_array($_SESSION['flash'])) {
+        return null;
+    }
+    $flash = $_SESSION['flash'];
+    unset($_SESSION['flash']);
+    return $flash;
+}
 function render_brand_header(string $eyebrow, string $title, string $subtitle = ''): void {
     echo '<header class="app-header">';
     echo '<div class="brand-block">';
@@ -20,6 +29,13 @@ function render_brand_header(string $eyebrow, string $title, string $subtitle = 
 }
 function render_header_actions(string $content = ''): void {
     echo '<div class="header-actions">' . $content . '</div></header>';
+}
+function render_flash(): void {
+    $flash = flash_get();
+    if ($flash === null) {
+        return;
+    }
+    echo '<div class="flash-message ' . e((string)($flash['type'] ?? 'info')) . '">' . e((string)($flash['message'] ?? '')) . '</div>';
 }
 function render_nav(string $active): void {
     $role = current_role();
@@ -39,4 +55,26 @@ function render_nav(string $active): void {
         echo '<a class="' . ($active === 'companies' ? 'active' : '') . '" href="/companies">Bedrijven</a>';
     }
     echo '</nav>';
+}
+function station_status(array $station): string {
+    if ((int)($station['has_missing_data'] ?? 0) === 1) return 'missing';
+    if ((int)($station['is_temp_peak'] ?? 0) === 1) return 'peak';
+    return 'ok';
+}
+function station_status_label(array $station): string {
+    return match (station_status($station)) {
+        'missing' => 'Missing data',
+        'peak' => 'Piekmeting',
+        default => 'OK',
+    };
+}
+function station_status_badge_class(array $station): string {
+    return match (station_status($station)) {
+        'missing' => 'warning',
+        'peak' => 'info',
+        default => 'success',
+    };
+}
+function subscription_status(array $subscription): string {
+    return empty($subscription['end_date']) || (string)$subscription['end_date'] >= gmdate('Y-m-d') ? 'actief' : 'verlopen';
 }
