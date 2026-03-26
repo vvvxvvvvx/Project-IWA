@@ -1,3 +1,6 @@
+{{--
+    Overzicht van recovery-codes voor twee-factor-authenticatie.
+--}}
 <?php
 
 use Laravel\Fortify\Actions\GenerateNewRecoveryCodes;

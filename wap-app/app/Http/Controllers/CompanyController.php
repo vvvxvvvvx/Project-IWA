@@ -1,5 +1,18 @@
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| CompanyController
+|--------------------------------------------------------------------------
+|
+| Beheert bedrijven en contactpersonen. Contactpersonen staan in tabel
+| relations en zijn functioneel gekoppeld aan een bedrijf.
+|
+| Als je hier routes of view-namen wijzigt, pas dan ook aan:
+| - routes/web.php
+| - resources/views/companies/*
+|
+*/
 namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
@@ -76,7 +89,7 @@ class CompanyController extends Controller
         $countries = DB::table('country')->orderBy('country')->get();
         $contacts = collect();
 
-        return view('companies.form', compact('company', 'countries', 'contacts'));
+        return view('companies.company-form', compact('company', 'countries', 'contacts'));
     }
 
     /**
@@ -105,7 +118,7 @@ class CompanyController extends Controller
      * direct ziet welke contactpersonen al in relations staan.
      *
      * Bij wijzigingen in de contacts-sectie ook aanpassen:
-     * - resources/views/companies/contact-form.blade.php
+     * - resources/views/companies/company-contact-form.blade.php
      * - createContact(), editContact(), storeContact(), updateContact()
      */
     public function edit(int $id): View
@@ -116,7 +129,7 @@ class CompanyController extends Controller
         $countries = DB::table('country')->orderBy('country')->get();
         $contacts = DB::table('relations')->where('company', $id)->orderBy('name')->get();
 
-        return view('companies.form', compact('company', 'countries', 'contacts'));
+        return view('companies.company-form', compact('company', 'countries', 'contacts'));
     }
 
     /**
@@ -169,7 +182,7 @@ class CompanyController extends Controller
 
         $contact = null;
 
-        return view('companies.contact-form', compact('company', 'contact'));
+        return view('companies.company-contact-form', compact('company', 'contact'));
     }
 
     /**
@@ -205,7 +218,7 @@ class CompanyController extends Controller
 
         abort_if(! $company || ! $contact, 404);
 
-        return view('companies.contact-form', compact('company', 'contact'));
+        return view('companies.company-contact-form', compact('company', 'contact'));
     }
 
     /**

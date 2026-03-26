@@ -1,3 +1,6 @@
+{{--
+    Setupvenster voor twee-factor-authenticatie.
+--}}
 <?php
 
 use Laravel\Fortify\Actions\ConfirmTwoFactorAuthentication;

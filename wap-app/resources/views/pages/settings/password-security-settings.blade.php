@@ -1,3 +1,6 @@
+{{--
+    Instellingenpagina voor wachtwoordbeveiliging.
+--}}
 <?php
 
 use App\Concerns\PasswordValidationRules;
