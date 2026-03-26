@@ -8,9 +8,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $stations = DB::table('station')
+        $status = $request->query('status');
+
+        $stationsQuery = DB::table('station')
             ->leftJoin('measurement as m', 'station.name', '=', 'm.station')
             ->leftJoin('nearestlocation as nl', 'station.name', '=', 'nl.station_name')
             ->leftJoin('original_measurement as om', 'm.id', '=', 'om.corrected_measurement')
@@ -29,11 +31,29 @@ class StationController extends Controller
                 DB::raw('MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) as has_missing_data'),
                 DB::raw('MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) as is_temp_peak')
             )
-            ->groupBy('station.name', 'nl.name', 'station.latitude', 'station.longitude')
+            ->groupBy('station.name', 'nl.name', 'station.latitude', 'station.longitude');
+
+        if ($status === 'missing') {
+            $stationsQuery->havingRaw('MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) = 1');
+        } elseif ($status === 'peak') {
+            $stationsQuery
+                ->havingRaw('MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) = 0')
+                ->havingRaw('MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) = 1');
+        } elseif ($status === 'ok') {
+            $stationsQuery
+                ->havingRaw('MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) = 0')
+                ->havingRaw('MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) = 0');
+        }
+
+        $stations = $stationsQuery
             ->orderBy('station.name')
             ->get();
 
-        return view('stations.index', compact('stations'));
+        // Stationsoverzicht gebruikt een expliciete viewnaam; pas deze ook aan als je de bestandsnaam wijzigt.
+        return view('stations.station-list', [
+            'stations' => $stations,
+            'selectedStatus' => $status,
+        ]);
     }
 
     public function show(string $stn)
@@ -69,7 +89,7 @@ class StationController extends Controller
             ->get()
             ->toArray();
 
-        return view('stations.detail', compact('station', 'readings'));
+        return view('stations.station-details', compact('station', 'readings'));
     }
 
     public function download(Request $request, string $stn): StreamedResponse
@@ -94,20 +114,30 @@ class StationController extends Controller
 
         return response()->streamDownload(function () use ($readings) {
             $handle = fopen('php://output', 'w');
+
             fputcsv($handle, [
                 'station', 'date', 'time', 'temperature', 'dewpoint_temperature',
                 'air_pressure_station', 'air_pressure_sea_level', 'visibility',
                 'wind_speed', 'percipation', 'snow_depth', 'wind_direction',
             ]);
+
             foreach ($readings as $row) {
                 fputcsv($handle, [
-                    $row->station, $row->date, $row->time,
-                    $row->temperature, $row->dewpoint_temperature,
-                    $row->air_pressure_station, $row->air_pressure_sea_level,
-                    $row->visibility, $row->wind_speed, $row->percipation,
-                    $row->snow_depth, $row->wind_direction,
+                    $row->station,
+                    $row->date,
+                    $row->time,
+                    $row->temperature,
+                    $row->dewpoint_temperature,
+                    $row->air_pressure_station,
+                    $row->air_pressure_sea_level,
+                    $row->visibility,
+                    $row->wind_speed,
+                    $row->percipation,
+                    $row->snow_depth,
+                    $row->wind_direction,
                 ]);
             }
+
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv']);
     }
