@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Measurement extends Model
 {
     public $timestamps = false;
+    protected $table = 'measurement';
 
     protected $fillable = [
         'station',
