@@ -1,5 +1,17 @@
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| MeasurementController
+|--------------------------------------------------------------------------
+|
+| Verwerkt binnenkomende meetdata en schrijft die weg naar de meettabellen.
+| Als je hier veldnamen of validatie wijzigt, controleer dan ook:
+| - routes/web.php of routes/api.php voor de endpoint-koppeling
+| - de measurement/original_measurement tabellen in de database
+| - eventuele generator- of dashboardcode die deze velden verwacht
+|
+*/
 namespace App\Http\Controllers;
 
 use App\Models\Measurement;

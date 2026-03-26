@@ -20,7 +20,7 @@ class PasswordUpdateTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = Livewire::test('pages::settings.password')
+        $response = Livewire::test('pages::settings.password-security-settings')
             ->set('current_password', 'password')
             ->set('password', 'new-password')
             ->set('password_confirmation', 'new-password')
@@ -39,7 +39,7 @@ class PasswordUpdateTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = Livewire::test('pages::settings.password')
+        $response = Livewire::test('pages::settings.password-security-settings')
             ->set('current_password', 'wrong-password')
             ->set('password', 'new-password')
             ->set('password_confirmation', 'new-password')
