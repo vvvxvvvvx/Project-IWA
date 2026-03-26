@@ -11,6 +11,7 @@ use App\Http\Controllers\StationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WeatherDataController;
 use App\Http\Controllers\MeasurementController;
+use App\Http\Controllers\Auth\SuperUserViewController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -62,6 +63,11 @@ Route::middleware('auth')->group(function () {
     Route::put('/companies/{id}', [CompanyController::class, 'update'])->name('companies.update');
     Route::delete('/companies/{id}', [CompanyController::class, 'destroy'])->name('companies.destroy');
 
+    // Super Users
+    Route::get('/super-users', [SuperUserViewController::class, 'index'])->name('super-users.index');
+    Route::post('/super-users/toevoegen', [SuperUserViewController::class, 'toevoegen'])->name('super-users.toevoegen');
+    Route::post('/super-users/{id}', [SuperUserViewController::class, 'verwijder'])->name('super-users.verwijder')->whereNumber('id');
+    Route::post('/super-users/{id}/bewerken', [SuperUserViewController::class, 'bewerkenVerify'])->name('super-users.bewerken')->whereNumber('id');
     // Contactpersonen horen functioneel bij een bedrijf en schrijven naar relations.
     Route::get('/companies/{id}/contacts/create', [CompanyController::class, 'createContact'])->name('companies.contacts.create');
     Route::post('/companies/{id}/contacts', [CompanyController::class, 'storeContact'])->name('companies.contacts.store');

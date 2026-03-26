@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class SuperUserViewController extends Controller
@@ -20,45 +23,67 @@ class SuperUserViewController extends Controller
     }
 
 
+    public function allusers(): array
     // Haal alle gebruikers op voor het super-user overzicht.
-    public function allUsers(): array
     {
-        $users = DB::table('users')->select('users.id', 'users.first_name', 'users.name', 'userroles.role')
-        ->join('userroles', 'users.user_role', '=', 'userroles.id')
-        ->get();
+        $users = DB::table('users')->select('users.id', 'users.first_name', 'users.name', 'users.email', 'userroles.role')
+            ->join('userroles', 'users.user_role', '=', 'userroles.id')
+            ->orderBy('userroles.role')
+            ->get();
 
-        return ['users' => $users];
+        $roles = DB::table('userroles')->select('id', 'role')->get();
+
+        return ['users' => $users, 'roles' => $roles];
     }
 
-    // Verwijder een gebruiker en laad daarna het overzicht opnieuw.
-    public function verwijder($id): array
+    public function verwijder(Request $request, $id)
     {
+        $currentUser = Auth::user();
+
+        if (!Hash::check($request->input('password'), $currentUser->password)) {
+            return redirect()->route('super-users.index')
+                ->with('error', 'Onjuist wachtwoord. Gebruiker is niet verwijderd.');
+        }
+
         DB::table('users')->where('id', $id)->delete();
-        return $this->allUsers();
+        return redirect()->route('super-users.index');
     }
 
-    // Voeg een gebruiker toe en laad daarna het overzicht opnieuw.
-    public function toevoegen($first_name, $name, $email, $password, $user_role): array
+    public function toevoegen(Request $request)
     {
         DB::table('users')->insert([
-            'first_name' => $first_name,
-            'name' => $name,
-            'email' => $email,
-            'password' => bcrypt($password),
-            'user_role' => $user_role
+            'first_name' => $request->input('first_name'),
+            'name'       => $request->input('name'),
+            'prefix'     => $request->input('prefix', ''),
+            'email'      => $request->input('email'),
+            'password'   => bcrypt($request->input('password')),
+            'employee_code' => $request->input('employee_code'),
+            'user_role'  => $request->input('user_role'),
         ]);
-        return $this->allUsers();
+        return redirect()->route('super-users.index');
     }
 
-    /**
-     * Toon alle users in view
-     */
+    public function bewerkenVerify(Request $request, $id)
+    {
+        $currentUser = Auth::user();
+
+        if (!Hash::check($request->input('password'), $currentUser->password)) {
+            return redirect()->route('super-users.index')
+                ->with('error', 'Onjuist wachtwoord. Bewerken geannuleerd.');
+        }
+
+        DB::table('users')->where('id', $id)->update([
+            'user_role' => $request->input('user_role'),
+        ]);
+
+        return redirect()->route('super-users.index')
+            ->with('success', 'Gebruiker succesvol bijgewerkt.');
+    }
+
+    
     public function index(): View
     {
         $data = $this->allUsers();
         return view('admin.super-user-list', $data);
     }
-
-    
-    
 }

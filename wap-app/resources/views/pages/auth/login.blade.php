@@ -58,11 +58,6 @@
             >
         </label>
 
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-            <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }} style="width:auto;padding:0;">
-            <span style="color:var(--muted);font-size:14px;margin:0;">Onthoud mij</span>
-        </label>
-
         <button type="submit" class="primary-button" style="width:100%;font-size:15px;">
             Inloggen
         </button>
