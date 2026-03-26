@@ -1,3 +1,6 @@
+{{--
+    Overzicht van alle bedrijven.
+--}}
 @extends('layouts.iwa')
 
 @section('title', 'Bedrijven')
@@ -11,11 +14,12 @@
 
 @section('content')
 <article class="panel">
-    <div class="panel-header">
+    <div class="panel-header panel-header-stack">
         <div>
             <h2>Alle bedrijven</h2>
             <p class="muted">Klik op een bedrijf voor contactpersonen, gekoppelde abonnementen en contractgerelateerde informatie.</p>
         </div>
+        <a class="primary-button" href="{{ route('companies.create') }}">Bedrijf toevoegen</a>
     </div>
     <div class="table-wrapper">
         <table class="data-table">
@@ -25,6 +29,7 @@
                     <th>Stad</th>
                     <th>Land</th>
                     <th>E-mail</th>
+                    <th>Acties</th>
                 </tr>
             </thead>
             <tbody>
@@ -34,6 +39,16 @@
                     <td>{{ $company->city ?? '-' }}</td>
                     <td>{{ $company->country_name ?? '-' }}</td>
                     <td>{{ $company->email ?? '-' }}</td>
+                    <td>
+                        <div class="inline-form">
+                            <a class="secondary-button" href="{{ route('companies.edit', $company->id) }}">Wijzigen</a>
+                            <form method="POST" action="{{ route('companies.destroy', $company->id) }}" onsubmit="return confirm('Bedrijf verwijderen?');">
+                                @csrf
+                                @method('DELETE')
+                                <button class="secondary-button" type="submit">Verwijderen</button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
                 @endforeach
             </tbody>

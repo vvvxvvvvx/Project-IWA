@@ -1,3 +1,10 @@
+{{--
+    Detailpagina van een bedrijf.
+
+    Contactpersonen komen uit de tabel relations.
+    Als je deze sectie wijzigt, pas dan ook resources/views/companies/form.blade.php aan,
+    zodat de edit-pagina dezelfde logica en acties blijft gebruiken.
+--}}
 @extends('layouts.iwa')
 
 @section('title', $company->name)
@@ -10,10 +17,14 @@
 @endsection
 
 @section('content')
-
-{{-- Bedrijfsgegevens --}}
 <section class="panel">
-    <div class="panel-header"><h2>Bedrijfsgegevens</h2></div>
+    <div class="panel-header panel-header-stack">
+        <h2>Bedrijfsgegevens</h2>
+        <div class="inline-form">
+            <a class="secondary-button" href="{{ route('companies.edit', $company->id) }}">Bedrijf wijzigen</a>
+            <a class="primary-button" href="{{ route('companies.contacts.create', $company->id) }}">Contactpersoon toevoegen</a>
+        </div>
+    </div>
     <div class="details-grid">
         <div><strong>Stad</strong><div>{{ $company->city ?? '-' }}</div></div>
         <div><strong>Adres</strong><div>{{ trim(($company->street ?? '') . ' ' . ($company->number ?? '') . ' ' . ($company->number_additional ?? '')) ?: '-' }}</div></div>
@@ -23,7 +34,6 @@
     </div>
 </section>
 
-{{-- Contactpersonen --}}
 <section class="panel" style="margin-top:18px;">
     <div class="panel-header"><h2>Contactpersonen</h2></div>
     <div class="table-wrapper">
@@ -35,6 +45,7 @@
                     <th>Titel</th>
                     <th>E-mail</th>
                     <th>Telefoon</th>
+                    <th>Acties</th>
                 </tr>
             </thead>
             <tbody>
@@ -45,16 +56,25 @@
                     <td>{{ $contact->title ?? '-' }}</td>
                     <td>{{ $contact->email ?? '-' }}</td>
                     <td>{{ $contact->phone ?? '-' }}</td>
+                    <td>
+                        <div class="inline-form">
+                            <a class="secondary-button" href="{{ route('companies.contacts.edit', [$company->id, $contact->id]) }}">Wijzigen</a>
+                            <form method="POST" action="{{ route('companies.contacts.destroy', [$company->id, $contact->id]) }}" onsubmit="return confirm('Contactpersoon verwijderen?');">
+                                @csrf
+                                @method('DELETE')
+                                <button class="secondary-button" type="submit">Verwijderen</button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
                 @empty
-                <tr><td colspan="5" class="muted">Geen contactpersonen gevonden.</td></tr>
+                <tr><td colspan="6" class="muted">Geen contactpersonen gevonden.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 </section>
 
-{{-- Gekoppelde abonnementen --}}
 <section class="panel" style="margin-top:18px;">
     <div class="panel-header"><h2>Gekoppelde abonnementen</h2></div>
     <div class="table-wrapper">
@@ -84,5 +104,4 @@
         </table>
     </div>
 </section>
-
 @endsection
