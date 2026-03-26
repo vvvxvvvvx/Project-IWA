@@ -76,16 +76,11 @@ class SuperUserViewController extends Controller
             ->with('success', 'Gebruiker succesvol bijgewerkt.');
     }
 
-    /**
-     * Toon alle users in view
-     */
+    
     public function index(): View
     {
         $data = $this->allusers();
         return view('super-users', $data);
     }
-
-    
-    
 }
 ?>
