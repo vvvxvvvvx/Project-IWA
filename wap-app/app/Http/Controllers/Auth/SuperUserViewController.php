@@ -12,15 +12,19 @@ use Illuminate\View\View;
 class SuperUserViewController extends Controller
 {
     /**
-     * Display the superuser creation view.
+     * Toon het super-user overzicht.
+     *
+     * Er bestaat geen aparte auth.superuser-view meer; gebruik daarom dezelfde
+     * expliciet benoemde beheerpagina als index().
      */
     public function create(): View
     {
-        return view('auth.superuser');
+        return view('admin.super-user-list', $this->allUsers());
     }
 
 
     public function allusers(): array
+    // Haal alle gebruikers op voor het super-user overzicht.
     {
         $users = DB::table('users')->select('users.id', 'users.first_name', 'users.name', 'users.email', 'userroles.role')
             ->join('userroles', 'users.user_role', '=', 'userroles.id')
@@ -79,8 +83,7 @@ class SuperUserViewController extends Controller
     
     public function index(): View
     {
-        $data = $this->allusers();
-        return view('super-users', $data);
+        $data = $this->allUsers();
+        return view('admin.super-user-list', $data);
     }
 }
-?>

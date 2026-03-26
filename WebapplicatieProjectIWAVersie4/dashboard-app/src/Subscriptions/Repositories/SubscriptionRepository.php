@@ -54,6 +54,27 @@ final class SubscriptionRepository
         return array_values(array_filter($this->all(), static fn(array $subscription): bool => (int)($subscription['type_id'] ?? 0) === $typeId));
     }
 
+    public function create(array $fields): array
+    {
+        $subscriptions = JsonFileStore::all('subscriptions');
+        $identifier = strtoupper(trim((string)($fields['identifier'] ?? 'SUB' . JsonFileStore::nextId('subscriptions'))));
+        $subscription = [
+            'id' => JsonFileStore::nextId('subscriptions'),
+            'company_id' => (int)($fields['company_id'] ?? 0),
+            'type_id' => (int)($fields['type_id'] ?? 0),
+            'start_date' => trim((string)($fields['start_date'] ?? gmdate('Y-m-d'))),
+            'end_date' => trim((string)($fields['end_date'] ?? '')) ?: null,
+            'price' => isset($fields['price']) ? (float)$fields['price'] : 0.0,
+            'notes' => trim((string)($fields['notes'] ?? '')) ?: null,
+            'identifier' => $identifier,
+            'token' => trim((string)($fields['token'] ?? '')) ?: bin2hex(random_bytes(12)),
+        ];
+        $subscriptions[] = $subscription;
+        JsonFileStore::write('subscriptions', $subscriptions);
+        $this->syncStations((int)$subscription['id'], (string)($fields['stations'] ?? ''));
+        return $this->findByIdentifier($identifier) ?? $subscription;
+    }
+
     public function updateByIdentifier(string $identifier, array $fields): ?array
     {
         $subscriptions = JsonFileStore::all('subscriptions');
@@ -61,16 +82,42 @@ final class SubscriptionRepository
             if ((string)$subscription['identifier'] !== $identifier) {
                 continue;
             }
-            $subscription['price'] = isset($fields['price']) ? (float)$fields['price'] : $subscription['price'];
+            $subscription['company_id'] = isset($fields['company_id']) && $fields['company_id'] !== '' ? (int)$fields['company_id'] : (int)$subscription['company_id'];
+            $subscription['price'] = isset($fields['price']) && $fields['price'] !== '' ? (float)$fields['price'] : $subscription['price'];
             $subscription['notes'] = trim((string)($fields['notes'] ?? $subscription['notes'])) ?: null;
             $subscription['end_date'] = trim((string)($fields['end_date'] ?? '')) !== '' ? trim((string)$fields['end_date']) : null;
+            $subscription['start_date'] = trim((string)($fields['start_date'] ?? $subscription['start_date'])) ?: $subscription['start_date'];
             if (isset($fields['type_id']) && $fields['type_id'] !== '') {
                 $subscription['type_id'] = (int)$fields['type_id'];
             }
+            if (isset($fields['identifier']) && trim((string)$fields['identifier']) !== '') {
+                $subscription['identifier'] = strtoupper(trim((string)$fields['identifier']));
+            }
             JsonFileStore::write('subscriptions', $subscriptions);
-            return $this->findByIdentifier($identifier);
+            $this->syncStations((int)$subscription['id'], (string)($fields['stations'] ?? ''));
+            return $this->findByIdentifier((string)$subscription['identifier']);
         }
         return null;
+    }
+
+    public function deleteByIdentifier(string $identifier): bool
+    {
+        $subscriptions = JsonFileStore::all('subscriptions');
+        $targetId = null;
+        $filtered = [];
+        foreach ($subscriptions as $subscription) {
+            if ((string)$subscription['identifier'] === $identifier) {
+                $targetId = (int)$subscription['id'];
+                continue;
+            }
+            $filtered[] = $subscription;
+        }
+        if ($targetId === null) {
+            return false;
+        }
+        JsonFileStore::write('subscriptions', $filtered);
+        $this->syncStations($targetId, '');
+        return true;
     }
 
     public function regenerateToken(string $identifier): ?array
@@ -121,5 +168,19 @@ final class SubscriptionRepository
             ];
         }
         return $grouped;
+    }
+
+    private function syncStations(int $subscriptionId, string $stations): void
+    {
+        $existing = JsonFileStore::all('subscription_station');
+        $filtered = array_values(array_filter($existing, static fn(array $link): bool => (int)$link['subscription_id'] !== $subscriptionId));
+        $stationCodes = array_values(array_unique(array_filter(array_map(static function (string $value): string {
+            return trim($value);
+        }, preg_split('/[,\s]+/', $stations) ?: []), static fn(string $value): bool => $value !== '')));
+
+        foreach ($stationCodes as $stationCode) {
+            $filtered[] = ['subscription_id' => $subscriptionId, 'station' => $stationCode];
+        }
+        JsonFileStore::write('subscription_station', $filtered);
     }
 }

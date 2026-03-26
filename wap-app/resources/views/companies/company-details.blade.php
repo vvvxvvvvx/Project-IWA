@@ -1,0 +1,108 @@
+{{-- Detailpagina van één bedrijf inclusief contactpersonen en gekoppelde abonnementen. --}}
+{{--
+    Detailpagina van een bedrijf.
+
+    Contactpersonen komen uit de tabel relations.
+    Als je deze sectie wijzigt, pas dan ook resources/views/companies/form.blade.php aan,
+    zodat de edit-pagina dezelfde logica en acties blijft gebruiken.
+--}}
+@extends('layouts.iwa')
+
+@section('title', $company->name)
+@section('eyebrow', 'Bedrijf detail')
+@section('page-title', $company->name)
+@section('page-subtitle', 'Bedrijfsgegevens, contactpersonen en gekoppelde abonnementen.')
+
+@section('back-button')
+    <a class="secondary-button" href="{{ route('companies.index') }}">Terug naar bedrijven</a>
+@endsection
+
+@section('content')
+<section class="panel">
+    <div class="panel-header panel-header-stack">
+        <h2>Bedrijfsgegevens</h2>
+        <div class="inline-form">
+            <a class="secondary-button" href="{{ route('companies.edit', $company->id) }}">Bedrijf wijzigen</a>
+            <a class="primary-button" href="{{ route('companies.contacts.create', $company->id) }}">Contactpersoon toevoegen</a>
+        </div>
+    </div>
+    <div class="details-grid">
+        <div><strong>Stad</strong><div>{{ $company->city ?? '-' }}</div></div>
+        <div><strong>Adres</strong><div>{{ trim(($company->street ?? '') . ' ' . ($company->number ?? '') . ' ' . ($company->number_additional ?? '')) ?: '-' }}</div></div>
+        <div><strong>Postcode</strong><div>{{ $company->zip_code ?? '-' }}</div></div>
+        <div><strong>Land</strong><div>{{ $company->country_name ?? '-' }}</div></div>
+        <div><strong>E-mail</strong><div>{{ $company->email ?? '-' }}</div></div>
+    </div>
+</section>
+
+<section class="panel" style="margin-top:18px;">
+    <div class="panel-header"><h2>Contactpersonen</h2></div>
+    <div class="table-wrapper">
+        <table class="data-table compact-table">
+            <thead>
+                <tr>
+                    <th>Naam</th>
+                    <th>Functie</th>
+                    <th>Titel</th>
+                    <th>E-mail</th>
+                    <th>Telefoon</th>
+                    <th>Acties</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($contacts as $contact)
+                <tr>
+                    <td>{{ trim(($contact->title ?? '') . ' ' . ($contact->first_name ?? '') . ' ' . ($contact->prefix ?? '') . ' ' . ($contact->name ?? '')) }}</td>
+                    <td>{{ $contact->function ?? '-' }}</td>
+                    <td>{{ $contact->title ?? '-' }}</td>
+                    <td>{{ $contact->email ?? '-' }}</td>
+                    <td>{{ $contact->phone ?? '-' }}</td>
+                    <td>
+                        <div class="inline-form">
+                            <a class="secondary-button" href="{{ route('companies.contacts.edit', [$company->id, $contact->id]) }}">Wijzigen</a>
+                            <form method="POST" action="{{ route('companies.contacts.destroy', [$company->id, $contact->id]) }}" onsubmit="return confirm('Contactpersoon verwijderen?');">
+                                @csrf
+                                @method('DELETE')
+                                <button class="secondary-button" type="submit">Verwijderen</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="6" class="muted">Geen contactpersonen gevonden.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel" style="margin-top:18px;">
+    <div class="panel-header"><h2>Gekoppelde abonnementen</h2></div>
+    <div class="table-wrapper">
+        <table class="data-table compact-table">
+            <thead>
+                <tr>
+                    <th>Identifier</th>
+                    <th>Type</th>
+                    <th>Looptijd</th>
+                    <th>Prijs</th>
+                    <th>Stations</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($subscriptions as $sub)
+                <tr>
+                    <td><a href="{{ route('subscriptions.show', $sub->identifier) }}">{{ $sub->identifier }}</a></td>
+                    <td>{{ $sub->type_name }}</td>
+                    <td>{{ $sub->start_date }} t/m {{ $sub->end_date ?? 'Doorlopend' }}</td>
+                    <td>&euro; {{ number_format($sub->price, 2, ',', '.') }}</td>
+                    <td>{{ $sub->station_count }}</td>
+                </tr>
+                @empty
+                <tr><td colspan="5" class="muted">Geen abonnementen gevonden.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</section>
+@endsection
