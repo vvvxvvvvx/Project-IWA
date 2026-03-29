@@ -8,12 +8,10 @@ use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StationController;
-use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\ContractController;
-use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\WeatherDataController;
 use App\Http\Controllers\MeasurementController;
 use App\Http\Controllers\Auth\SuperUserViewController;
+use App\Http\Controllers\RoleTaskController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -74,6 +72,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/super-users/toevoegen', [SuperUserViewController::class, 'toevoegen'])->name('super-users.toevoegen');
     Route::post('/super-users/{id}', [SuperUserViewController::class, 'verwijder'])->name('super-users.verwijder')->whereNumber('id');
     Route::post('/super-users/{id}/bewerken', [SuperUserViewController::class, 'bewerkenVerify'])->name('super-users.bewerken')->whereNumber('id');
+
+    // Roltaken beheer
+    Route::get('/role-tasks', [RoleTaskController::class, 'index'])->name('role-tasks.index');
+    Route::post('/role-tasks', [RoleTaskController::class, 'store'])->name('role-tasks.store');
+    Route::put('/role-tasks/{id}', [RoleTaskController::class, 'update'])->name('role-tasks.update')->whereNumber('id');
+    Route::delete('/role-tasks/{id}', [RoleTaskController::class, 'destroy'])->name('role-tasks.destroy')->whereNumber('id');
+
     // Contactpersonen horen functioneel bij een bedrijf en schrijven naar relations.
     Route::get('/companies/{id}/contacts/create', [CompanyController::class, 'createContact'])->name('companies.contacts.create');
     Route::post('/companies/{id}/contacts', [CompanyController::class, 'storeContact'])->name('companies.contacts.store');
