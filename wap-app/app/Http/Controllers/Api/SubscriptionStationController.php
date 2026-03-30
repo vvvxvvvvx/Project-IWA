@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Subscription;
 use App\Models\Station;
+use App\Models\Measurement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SubscriptionStationController extends Controller
 {
@@ -48,6 +50,38 @@ class SubscriptionStationController extends Controller
 
         return response()->json([
             'data' => $stationDetails
+        ]);
+    }
+
+    public function measurements($identifier)
+    {
+        // Zoek het specifieke abonnement
+        $subscription = Subscription::with('stations')->where('identifier', $identifier)->first();
+
+        if (!$subscription) {
+            return response()->json(['error' => 'Abonnement niet gevonden.'], 404);
+        }
+
+        // Haal een lijst van station namen voor dit abonnement
+        $stationNames = $subscription->stations->pluck('name');
+
+        if ($stationNames->isEmpty()) {
+            return response()->json(['data' => []]);
+        }
+
+        // Haal de meest recente meting (measurement) op per station.
+        // We pakken de hoogste 'id' (laatste insert) per station.
+        $latestMeasurements = Measurement::whereIn('station', $stationNames)
+            ->whereIn('id', function($query) use ($stationNames) {
+                $query->select(DB::raw('MAX(id)'))
+                      ->from('measurement')
+                      ->whereIn('station', $stationNames)
+                      ->groupBy('station');
+            })
+            ->get();
+
+        return response()->json([
+            'data' => $latestMeasurements
         ]);
     }
 }

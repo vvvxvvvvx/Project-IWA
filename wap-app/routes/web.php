@@ -9,6 +9,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StationController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\ContractController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\WeatherDataController;
 use App\Http\Controllers\MeasurementController;
 use App\Http\Controllers\Auth\SuperUserViewController;
@@ -27,6 +29,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Authenticatie
+Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 Route::get('/', function () {
     return redirect()->route('login');
 });
