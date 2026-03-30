@@ -105,17 +105,6 @@
     <section class="tab-panel active" id="overviewTab">
         <section class="content-grid">
 
-            {{-- Temperatuurgrafiek --}}
-            <article class="panel chart-panel">
-                <div class="panel-header">
-                    <div>
-                        <h2>Originele vs gecorrigeerde temperatuur</h2>
-                        <p class="muted">Ruwe temperatuur naast de gecorrigeerde waarde voor recente correcties.</p>
-                    </div>
-                </div>
-                <canvas id="temperatureChart" height="160"></canvas>
-            </article>
-
             {{-- Actiefste stations donut --}}
             <article class="panel donut-panel">
                 <div class="panel-header">
