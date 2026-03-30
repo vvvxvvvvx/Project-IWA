@@ -11,27 +11,10 @@ use Illuminate\View\View;
 class RoleTaskController extends Controller
 {
     /**
-     * Controleer of de ingelogde gebruiker een administrator is.
-     * Zo niet, stop met een 403-fout (toegang geweigerd).
-     */
-    private function authorizeAdmin(): void
-    {
-        $roleName = DB::table('userroles')
-            ->where('id', Auth::user()->user_role)
-            ->value('role');
-
-        if (strtolower($roleName) !== 'administrator') {
-            abort(403);
-        }
-    }
-
-    /**
      * Toon alle rollen met hun taken.
      */
     public function index(): View
     {
-        $this->authorizeAdmin();
-
         $roles = DB::table('userroles')->get();
 
         $tasks = DB::table('role_tasks')
@@ -48,7 +31,6 @@ class RoleTaskController extends Controller
      */
     public function store(Request $request)
     {
-        $this->authorizeAdmin();
 
         $request->validate([
             'role_id'     => 'required|exists:userroles,id',
@@ -71,7 +53,6 @@ class RoleTaskController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->authorizeAdmin();
 
         $request->validate([
             'name'        => 'required|max:100',
@@ -92,7 +73,6 @@ class RoleTaskController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        $this->authorizeAdmin();
 
         if (!Hash::check($request->input('password'), Auth::user()->password)) {
             return redirect()->route('role-tasks.index')

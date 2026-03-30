@@ -17,7 +17,7 @@
         <div>
             <p class="eyebrow">Internationale Weer Agentschap</p>
             <h1>Weerdashboard</h1>
-            <p class="header-subtitle">Ingelogd als {{ $displayName }} &middot; Rol: {{ $role === 'admin' ? 'Administrator' : 'Medewerker' }}</p>
+            <p class="header-subtitle">Ingelogd als {{ $displayName }} &middot; Rol: {{ $role }}</p>
         </div>
     </div>
     <div class="header-actions">
