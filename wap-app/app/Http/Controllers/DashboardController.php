@@ -24,10 +24,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // Get the role name from userroles table
-        $roleName = DB::table('userroles')->where('id', $user->user_role)->value('role') ?? '';
-        $isAdmin  = strtolower($roleName) === 'administrator';
-        $role     = $isAdmin ? 'admin' : 'employee';
+        $role = $user->userrole ? $user->userrole->role : 'employee';
         $displayName = trim(($user->first_name ?? '') . ' ' . ($user->name ?? '')) ?: 'Gebruiker';
 
         // Overview metrics

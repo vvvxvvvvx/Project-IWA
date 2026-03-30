@@ -17,7 +17,7 @@
         <div>
             <p class="eyebrow">Internationale Weer Agentschap</p>
             <h1>Weerdashboard</h1>
-            <p class="header-subtitle">Ingelogd als {{ $displayName }} &middot; Rol: {{ $role === 'admin' ? 'Administrator' : 'Medewerker' }}</p>
+            <p class="header-subtitle">Ingelogd als {{ $displayName }} &middot; Rol: {{ $role }}</p>
         </div>
     </div>
     <div class="header-actions">
@@ -30,14 +30,7 @@
 </header>
 
 {{-- ===== NAVIGATION ===== --}}
-<nav class="page-nav">
-    <a class="active" href="{{ route('dashboard') }}">Dashboard</a>
-    <a href="{{ route('stations.index') }}">Stations</a>
-    <a href="{{ route('subscriptions.index') }}">Abonnementen</a>
-    <a href="{{ route('subscription-types.index') }}">Aanbod</a>
-    <a href="{{ route('contracts.index') }}">Contracten</a>
-    <a href="{{ route('companies.index') }}">Bedrijven</a>
-</nav>
+@include('partials.nav')
 
 {{-- ===== MAIN SHELL ===== --}}
 <main class="dashboard-shell">
