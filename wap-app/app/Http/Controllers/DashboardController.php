@@ -22,11 +22,20 @@ class DashboardController extends Controller
         return response()->json($this->buildDashboardData());
     }
 
+    private function getUserTasks(?\App\Models\User $user): array
+    {
+        if (!$user || !$user->userrole) {
+            return [];
+        }
+        return $user->userrole->tasks()->pluck('name')->toArray();
+    }
+
     private function buildDashboardData(): array
     {
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
         $today = today()->toDateString();
+        $userTasks = $this->getUserTasks($user);
 
         $dashboardData = Cache::remember('dashboard.overview.v2.' . $today, now()->addMinutes(5), function () use ($today) {
             $last14Days = now()->subDays(13)->toDateString();
@@ -299,11 +308,39 @@ class DashboardController extends Controller
             ];
         });
 
-        return array_merge($dashboardData, [
+        // Filter cached data to only include what this user is allowed to see
+        $canViewStations     = in_array('view_stations', $userTasks);
+        $canViewSubscriptions = in_array('view_subscriptions', $userTasks);
+
+        $filtered = $dashboardData;
+
+        if (!$canViewStations) {
+            $filtered['top_stations']         = collect();
+            $filtered['chart_points']         = collect();
+            $filtered['latest_readings']      = collect();
+            $filtered['stations']             = collect();
+            $filtered['flagged_readings']     = collect();
+            $filtered['recent_corrections']   = collect();
+            $filtered['missing_fields_stats'] = collect();
+            $filtered['stations_most_missing']= collect();
+            $filtered['stations_by_country']  = [];
+            $filtered['overview']['station_count']  = null;
+            $filtered['overview']['readings_today'] = null;
+            $filtered['overview']['quality_pct']    = null;
+            $filtered['overview']['missing_count']  = null;
+            $filtered['overview']['peak_count']     = null;
+        }
+
+        if (!$canViewSubscriptions) {
+            $filtered['overview']['active_subscriptions'] = null;
+        }
+
+        return array_merge($filtered, [
             'displayName' => $user
                 ? (trim(($user->first_name ?? '') . ' ' . ($user->name ?? '')) ?: ($user->name ?? 'IWA-medewerker'))
                 : 'IWA-medewerker',
-            'role' => $user ? (optional($user->userrole)->role ?? 'medewerker') : 'medewerker',
+            'role'      => $user ? (optional($user->userrole)->role ?? 'medewerker') : 'medewerker',
+            'userTasks' => $userTasks,
         ]);
     }
 }
