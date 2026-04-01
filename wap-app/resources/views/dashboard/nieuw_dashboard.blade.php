@@ -35,14 +35,7 @@
 </header>
 
 {{-- ===== NAVIGATIE ===== --}}
-<nav class="page-nav">
-    <a class="active" href="{{ route('dashboard') }}">Dashboard</a>
-    <a href="{{ route('stations.index') }}">Stations</a>
-    <a href="{{ route('subscriptions.index') }}">Abonnementen</a>
-    <a href="{{ route('subscription-types.index') }}">Aanbod</a>
-    <a href="{{ route('contracts.index') }}">Contracten</a>
-    <a href="{{ route('companies.index') }}">Bedrijven</a>
-</nav>
+@include('partials.nav')
 
 {{-- ===== HOOFD CONTENT ===== --}}
 <main class="dashboard-shell">
@@ -50,6 +43,7 @@
     {{-- ===== METRICS RIJ ===== --}}
     <section class="metrics-grid">
 
+        @if(in_array('view_stations', $userTasks))
         <div class="metric-card">
             <div class="metric-icon">◎</div>
             <div>
@@ -67,7 +61,9 @@
                 <span class="metric-change positive">Ontvangen op {{ now()->format('d-m-Y') }}</span>
             </div>
         </div>
+        @endif
 
+        @if(in_array('view_subscriptions', $userTasks))
         <div class="metric-card">
             <div class="metric-icon">◈</div>
             <div>
@@ -76,7 +72,9 @@
                 <span class="metric-change positive">Lopende contracten</span>
             </div>
         </div>
+        @endif
 
+        @if(in_array('view_stations', $userTasks))
         <div class="metric-card">
             <div class="metric-icon">⌁</div>
             <div>
@@ -88,6 +86,7 @@
                 </span>
             </div>
         </div>
+        @endif
 
     </section>
 
@@ -95,6 +94,7 @@
     <section class="tab-panel active" id="overviewTab">
         <section class="content-grid">
 
+            @if(in_array('view_stations', $userTasks))
             {{-- Stations kaart per land --}}
             <article class="panel map-panel span-2">
                 <div class="panel-header">
@@ -176,7 +176,7 @@
                     </tbody>
                 </table>
             </article>
-
+            @endif
 
         </section>
     </section>
@@ -186,8 +186,8 @@
 {{-- ===== DATA DOORGEVEN AAN JS ===== --}}
 @php
 $bootstrapData = [
-    'overview'           => $overview,
-    'stationsByCountry'  => $stations_by_country,
+    'overview'          => $overview,
+    'stationsByCountry' => in_array('view_stations', $userTasks) ? $stations_by_country : [],
 ];
 @endphp
 <script>
