@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find /c/Github/Project-IWA/wap-app/config -name *.php -type f)"
+      "Bash(find /c/Github/Project-IWA/wap-app/config -name *.php -type f)",
+      "Bash(xargs grep:*)"
     ]
   }
 }
