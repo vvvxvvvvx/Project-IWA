@@ -261,11 +261,11 @@
     </div>
 
     {{-- CSV Download --}}
-    {{--<form method="GET" action="{{ route('stations.download', $station->stn) }}" style="margin-top: 15px;">
+    <form method="GET" action="{{ route('stations.download', $station->stn) }}" style="margin-top: 15px;">
         <input type="hidden" name="from" value="{{ request('from', now()->format('Y-m-d')) }}">
         <input type="hidden" name="to" value="{{ request('to', now()->format('Y-m-d')) }}">
         <button type="submit" class="secondary-button" style="padding: 8px 16px;">📥 Download als CSV</button>
-    </form> --}}
+    </form>
 </section>
 
 @endsection
