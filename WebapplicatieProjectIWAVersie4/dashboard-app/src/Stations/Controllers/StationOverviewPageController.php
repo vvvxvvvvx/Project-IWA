@@ -36,6 +36,10 @@ final class StationOverviewPageController
             return str_contains($haystack, strtolower($query));
         }));
 
+        usort($stations, static function (array $a, array $b): int {
+            return strcasecmp((string)($a['name'] ?? ''), (string)($b['name'] ?? ''));
+        });
+
         HttpResponse::html(PhpViewRenderer::render('stations/index', [
             'stations' => $stations,
             'filters' => ['q' => $query, 'status' => $status],
