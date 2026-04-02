@@ -45,6 +45,7 @@ class StationController extends Controller
                 DB::raw('ROUND(AVG(m.temperature), 1) as avg_temp'),
                 DB::raw('MAX(m.visibility) as visib'),
                 DB::raw('MAX(m.wind_speed) as wdsp'),
+                DB::raw('MAX(m.wind_direction) as wnddir'),
                 DB::raw('MAX(m.percipation) as prcp'),
                 DB::raw('COUNT(m.id) as reading_count'),
                 DB::raw('MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) as has_missing_data'),
@@ -60,7 +61,7 @@ class StationController extends Controller
         }
 
         $stations = $stationsQuery
-            ->orderBy('station.name')
+            ->orderBy('nl.name')
             ->get();
 
         return view('stations.station-list', [
@@ -113,6 +114,7 @@ class StationController extends Controller
                 'm.air_pressure_sea_level as slp',
                 'm.visibility as visib',
                 'm.wind_speed as wdsp',
+                'm.wind_direction as wnddir',
                 'm.percipation as prcp',
                 'om.inavlid_temperature as orig_temp',
                 'om.missing_field as is_missing'
