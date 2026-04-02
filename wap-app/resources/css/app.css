@@ -30,8 +30,8 @@
 
 @layer theme {
     .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
+        --color-accent: var(--color-black);
+        --color-accent-content: var(--color-black);
         --color-accent-foreground: var(--color-neutral-800);
     }
 }
@@ -59,6 +59,11 @@ input:focus[data-flux-control],
 textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
     @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+}
+
+input[data-flux-control],
+textarea[data-flux-control] {
+    color: black;
 }
 
 /* \[:where(&)\]:size-4 {
