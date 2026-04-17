@@ -72,6 +72,104 @@ class StationController extends Controller
         ]);
     }
 
+    public function faults()
+    {
+        $stations = DB::table('station')
+            ->leftJoin('measurement as m', 'station.name', '=', 'm.station')
+            ->leftJoin('nearestlocation as nl', 'station.name', '=', 'nl.station_name')
+            ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
+            ->leftJoin('original_measurement as om', 'm.id', '=', 'om.corrected_measurement')
+            ->select(
+                'station.name as stn',
+                'nl.name as location_label',
+                'c.country as country_name',
+                DB::raw("MAX(CONCAT(m.date, ' ', m.time)) as measured_at"),
+                DB::raw('COUNT(m.id) as reading_count'),
+                DB::raw('MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) as has_missing_data'),
+                DB::raw('MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) as is_temp_peak'),
+                DB::raw("CASE WHEN MAX(m.date) >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END as is_online")
+            )
+            ->groupBy('station.name', 'nl.name', 'c.country')
+            ->havingRaw("
+                (CASE WHEN MAX(m.date) >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END) = 0
+                OR MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) = 1
+                OR MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) = 1
+            ")
+            ->orderBy('station.name')
+            ->get();
+
+        return view('stations.station-faults', [
+            'stations' => $stations,
+        ]);
+    }
+
+    public function faultsOffline()
+    {
+        $stations = DB::table('station')
+            ->leftJoin('measurement as m', 'station.name', '=', 'm.station')
+            ->leftJoin('nearestlocation as nl', 'station.name', '=', 'nl.station_name')
+            ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
+            ->select(
+                'station.name as stn',
+                'nl.name as location_label',
+                'c.country as country_name',
+                DB::raw("MAX(CONCAT(m.date, ' ', m.time)) as measured_at"),
+                DB::raw('COUNT(m.id) as reading_count')
+            )
+            ->groupBy('station.name', 'nl.name', 'c.country')
+            ->havingRaw("CASE WHEN MAX(m.date) >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END = 0")
+            ->orderBy('station.name')
+            ->get();
+
+        return view('stations.station-offline', ['stations' => $stations]);
+    }
+
+    public function faultsMissing()
+    {
+        $stations = DB::table('station')
+            ->leftJoin('measurement as m', 'station.name', '=', 'm.station')
+            ->leftJoin('nearestlocation as nl', 'station.name', '=', 'nl.station_name')
+            ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
+            ->leftJoin('original_measurement as om', 'm.id', '=', 'om.corrected_measurement')
+            ->select(
+                'station.name as stn',
+                'nl.name as location_label',
+                'c.country as country_name',
+                DB::raw("MAX(CONCAT(m.date, ' ', m.time)) as measured_at"),
+                DB::raw('COUNT(DISTINCT m.id) as reading_count'),
+                DB::raw('COUNT(DISTINCT CASE WHEN om.missing_field IS NOT NULL THEN om.id END) as missing_count')
+            )
+            ->groupBy('station.name', 'nl.name', 'c.country')
+            ->havingRaw("MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) = 1")
+            ->orderBy('station.name')
+            ->get();
+
+        return view('stations.station-missing', ['stations' => $stations]);
+    }
+
+    public function faultsTemperature()
+    {
+        $stations = DB::table('station')
+            ->leftJoin('measurement as m', 'station.name', '=', 'm.station')
+            ->leftJoin('nearestlocation as nl', 'station.name', '=', 'nl.station_name')
+            ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
+            ->leftJoin('original_measurement as om', 'm.id', '=', 'om.corrected_measurement')
+            ->select(
+                'station.name as stn',
+                'nl.name as location_label',
+                'c.country as country_name',
+                DB::raw("MAX(CONCAT(m.date, ' ', m.time)) as measured_at"),
+                DB::raw('COUNT(DISTINCT m.id) as reading_count'),
+                DB::raw('COUNT(DISTINCT CASE WHEN om.inavlid_temperature IS NOT NULL THEN om.id END) as correction_count')
+            )
+            ->groupBy('station.name', 'nl.name', 'c.country')
+            ->havingRaw("MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) = 1")
+            ->orderBy('station.name')
+            ->get();
+
+        return view('stations.station-temperature', ['stations' => $stations]);
+    }
+
     public function show(string $stn)
     {
         $station = DB::table('station')
