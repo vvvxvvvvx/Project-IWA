@@ -324,20 +324,28 @@ class StationController extends Controller
         ]);
 
         foreach (array_keys($detectedTypes) as $type) {
-            $openExists = StationFault::where('station', $stn)
+            // Alleen aanmaken als er vandaag nog geen storing van dit type bestaat
+            $alreadyExists = StationFault::where('station', $stn)
                 ->where('type', $type)
-                ->whereIn('status', ['open', 'in_behandeling'])
+                ->whereDate('created_at', today())
                 ->exists();
 
-            if (!$openExists) {
+            if (!$alreadyExists) {
                 StationFault::create(['station' => $stn, 'type' => $type, 'status' => 'open']);
             }
         }
 
-        $faults = StationFault::where('station', $stn)
+        $activeFaults = StationFault::where('station', $stn)
+            ->whereIn('status', ['open', 'in_behandeling'])
             ->withCount('notes')
-            ->orderByRaw("FIELD(status, 'open', 'in_behandeling', 'opgelost')")
+            ->orderByRaw("FIELD(status, 'open', 'in_behandeling')")
             ->orderBy('created_at', 'desc')
+            ->get();
+
+        $resolvedFaults = StationFault::where('station', $stn)
+            ->where('status', 'opgelost')
+            ->withCount('notes')
+            ->orderBy('updated_at', 'desc')
             ->get();
 
         return view('stations.station-details', [
@@ -351,7 +359,8 @@ class StationController extends Controller
             'missingFieldsPercentage' => $missingFieldsPercentage,
             'correctionPercentage' => $correctionPercentage,
             'qualityPercentage' => $qualityPercentage,
-            'faults' => $faults,
+            'activeFaults' => $activeFaults,
+            'resolvedFaults' => $resolvedFaults,
         ]);
     }
 
