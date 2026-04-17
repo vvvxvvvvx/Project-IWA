@@ -28,6 +28,6 @@ class Country extends Model
 
     public function nearestlocations()
     {
-        return $this->hasMany(Nearestlocation::class, 'country_code', 'country_code');
+        return $this->hasMany(NearestLocation::class, 'country_code', 'country_code');
     }
 }

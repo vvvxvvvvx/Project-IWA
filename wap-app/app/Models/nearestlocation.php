@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Nearestlocation extends Model
+class NearestLocation extends Model
 {
     public $timestamps = false;
     protected $table = 'nearestlocation';
