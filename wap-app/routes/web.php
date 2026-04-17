@@ -77,6 +77,8 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('task:view_contracts')->group(function () {
         Route::get('/contracts', [ContractController::class, 'index'])->name('contracts.index');
+        Route::get('/contracts/overview', [ContractController::class, 'overview'])->name('contracts.overview');
+        Route::get('/contracts/authorized-users', [ContractController::class, 'authorizedUsersIndex'])->name('contracts.authorized-users.index');
         Route::get('/contracts/create', [ContractController::class, 'create'])->middleware('task:manage_contracts')->name('contracts.create');
         Route::post('/contracts', [ContractController::class, 'store'])->middleware('task:manage_contracts')->name('contracts.store');
         Route::get('/contracts/{identifier}', [ContractController::class, 'show'])->name('contracts.show');
@@ -89,6 +91,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/contracts/{identifier}/authorized-users', [ContractController::class, 'storeAuthorizedUser'])->middleware('task:manage_contract_users')->name('contracts.authorized-users.store');
         Route::put('/contracts/{identifier}/authorized-users/{userId}', [ContractController::class, 'updateAuthorizedUser'])->middleware('task:manage_contract_users')->name('contracts.authorized-users.update');
         Route::delete('/contracts/{identifier}/authorized-users/{userId}', [ContractController::class, 'destroyAuthorizedUser'])->middleware('task:manage_contract_users')->name('contracts.authorized-users.destroy');
+        Route::put('/contracts/{identifier}/role-permissions', [ContractController::class, 'updateRolePermissions'])->middleware('task:manage_contract_users')->name('contracts.role-permissions.update');
 
         Route::post('/contracts/{identifier}/queries', [ContractController::class, 'storeQuery'])->middleware('task:manage_contract_queries')->name('contracts.queries.store');
         Route::put('/contracts/{identifier}/queries/{queryId}', [ContractController::class, 'updateQuery'])->middleware('task:manage_contract_queries')->name('contracts.queries.update');
