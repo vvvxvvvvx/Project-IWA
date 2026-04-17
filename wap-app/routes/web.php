@@ -28,6 +28,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Generator endpoint (geen auth of CSRF vereist)
+Route::post('/postWeatherData', [MeasurementController::class, 'store']);
+
 // Authenticatie
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
