@@ -46,6 +46,82 @@
     @endif
 </article>
 
+{{-- Details van de storing (aard & ernst) --}}
+<article class="panel" style="margin-bottom:18px;">
+    <div class="panel-header">
+        <h2>Details van de storing</h2>
+    </div>
+
+    @if($fault->type === 'offline')
+        @if($context['last_seen'])
+            <div style="display:flex; gap:2rem; flex-wrap:wrap;">
+                <div>
+                    <p class="muted" style="margin:0; font-size:0.85rem;">Laatste meting ontvangen</p>
+                    <p style="margin:0.2rem 0 0; font-weight:600; font-size:1.1rem;">{{ $context['last_seen'] }} UTC</p>
+                </div>
+                <div>
+                    <p class="muted" style="margin:0; font-size:0.85rem;">Offline sinds</p>
+                    <p style="margin:0.2rem 0 0; font-weight:600; font-size:1.1rem; color:#ef4444;">
+                        {{ $context['days_offline'] === 0 ? 'Vandaag' : $context['days_offline'] . ' dag(en)' }}
+                    </p>
+                </div>
+            </div>
+        @else
+            <p class="muted">Geen meetdata beschikbaar voor dit station.</p>
+        @endif
+
+    @elseif($fault->type === 'ontbrekende_data')
+        <div style="margin-bottom:0.75rem;">
+            <span style="font-weight:600;">{{ $context['total_missing'] }} metingen</span> met ontbrekende velden gevonden.
+        </div>
+        @if($context['missing_fields']->isNotEmpty())
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Ontbrekend veld</th><th>Aantal metingen</th></tr>
+                </thead>
+                <tbody>
+                    @foreach($context['missing_fields'] as $row)
+                    <tr>
+                        <td>{{ $row->missing_field }}</td>
+                        <td>{{ $row->aantal }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+
+    @elseif($fault->type === 'temperatuurcorrectie')
+        <div style="margin-bottom:0.75rem;">
+            In totaal <span style="font-weight:600;">{{ $context['total_corrections'] }} temperatuurcorrecties</span> geregistreerd voor dit station.
+            Onderstaande tabel toont de 20 meest recente correcties.
+        </div>
+        @if($context['corrections']->isNotEmpty())
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Tijdstip</th><th>Originele waarde (°C)</th><th>Gecorrigeerde waarde (°C)</th><th>Afwijking</th></tr>
+                </thead>
+                <tbody>
+                    @foreach($context['corrections'] as $row)
+                    @php $diff = round(abs($row->origineel - $row->gecorrigeerd), 2); @endphp
+                    <tr>
+                        <td>{{ $row->measured_at }}</td>
+                        <td style="color:#ef4444;">{{ round($row->origineel, 2) }}</td>
+                        <td>{{ round($row->gecorrigeerd, 2) }}</td>
+                        <td>{{ $diff }} °C</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+    @else
+        <p class="muted">Geen aanvullende gegevens beschikbaar voor dit type storing.</p>
+    @endif
+</article>
+
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
 
     {{-- Aantekeningen tijdlijn --}}

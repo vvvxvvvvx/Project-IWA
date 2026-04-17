@@ -31,17 +31,70 @@ class StationFaultController extends Controller
     public function show(int $id)
     {
         $fault = StationFault::with('notes')->findOrFail($id);
+        $stn   = $fault->station;
 
         $station = DB::table('station')
             ->leftJoin('nearestlocation as nl', 'station.name', '=', 'nl.station_name')
             ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
-            ->where('station.name', $fault->station)
+            ->where('station.name', $stn)
             ->select('station.name as stn', 'nl.name as location_label', 'c.country as country_name')
             ->first();
+
+        $context = [];
+
+        if ($fault->type === 'offline') {
+            $last = DB::table('measurement')
+                ->where('station', $stn)
+                ->select(DB::raw("MAX(CONCAT(date, ' ', time)) as last_seen"), DB::raw('MAX(date) as last_date'))
+                ->first();
+
+            $context['last_seen']    = $last->last_seen ?? null;
+            $context['days_offline'] = $last->last_date
+                ? (int) abs(now()->diffInDays(\Carbon\Carbon::parse($last->last_date)))
+                : null;
+        }
+
+        if ($fault->type === 'ontbrekende_data') {
+            $missing = DB::table('original_measurement as om')
+                ->join('measurement as m', 'm.id', '=', 'om.corrected_measurement')
+                ->where('m.station', $stn)
+                ->whereNotNull('om.missing_field')
+                ->select('om.missing_field', DB::raw('COUNT(*) as aantal'))
+                ->groupBy('om.missing_field')
+                ->orderByDesc('aantal')
+                ->get();
+
+            $context['missing_fields'] = $missing;
+            $context['total_missing']  = $missing->sum('aantal');
+        }
+
+        if ($fault->type === 'temperatuurcorrectie') {
+            $corrections = DB::table('original_measurement as om')
+                ->join('measurement as m', 'm.id', '=', 'om.corrected_measurement')
+                ->where('m.station', $stn)
+                ->whereNotNull('om.inavlid_temperature')
+                ->select(
+                    DB::raw("CONCAT(m.date, ' ', m.time) as measured_at"),
+                    'om.inavlid_temperature as origineel',
+                    'm.temperature as gecorrigeerd'
+                )
+                ->orderByDesc('m.date')
+                ->orderByDesc('m.time')
+                ->limit(20)
+                ->get();
+
+            $context['corrections']       = $corrections;
+            $context['total_corrections'] = DB::table('original_measurement as om')
+                ->join('measurement as m', 'm.id', '=', 'om.corrected_measurement')
+                ->where('m.station', $stn)
+                ->whereNotNull('om.inavlid_temperature')
+                ->count();
+        }
 
         return view('storingen.storing-detail', [
             'fault'   => $fault,
             'station' => $station,
+            'context' => $context,
         ]);
     }
 
