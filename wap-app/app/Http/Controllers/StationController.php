@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\StationFault;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -313,6 +314,40 @@ class StationController extends Controller
             default => $readingsToday,
         };
 
+        // Detecteer actieve storingen uit meetdata en maak automatisch records aan
+        $isOffline = !$latestDate || $latestDate < now()->subDay()->format('Y-m-d');
+
+        $detectedTypes = array_filter([
+            'offline'              => $isOffline,
+            'ontbrekende_data'     => $missingFieldsCount > 0,
+            'temperatuurcorrectie' => $temperatureCorrectionsCount > 0,
+        ]);
+
+        foreach (array_keys($detectedTypes) as $type) {
+            // Alleen aanmaken als er vandaag nog geen storing van dit type bestaat
+            $alreadyExists = StationFault::where('station', $stn)
+                ->where('type', $type)
+                ->whereDate('created_at', today())
+                ->exists();
+
+            if (!$alreadyExists) {
+                StationFault::create(['station' => $stn, 'type' => $type, 'status' => 'open']);
+            }
+        }
+
+        $activeFaults = StationFault::where('station', $stn)
+            ->whereIn('status', ['open', 'in_behandeling'])
+            ->withCount('notes')
+            ->orderByRaw("FIELD(status, 'open', 'in_behandeling')")
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $resolvedFaults = StationFault::where('station', $stn)
+            ->where('status', 'opgelost')
+            ->withCount('notes')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
         return view('stations.station-details', [
             'station' => $station,
             'readings' => $tableReadings,
@@ -324,6 +359,8 @@ class StationController extends Controller
             'missingFieldsPercentage' => $missingFieldsPercentage,
             'correctionPercentage' => $correctionPercentage,
             'qualityPercentage' => $qualityPercentage,
+            'activeFaults' => $activeFaults,
+            'resolvedFaults' => $resolvedFaults,
         ]);
     }
 
