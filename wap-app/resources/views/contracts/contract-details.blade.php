@@ -3,7 +3,7 @@
 @section('title', $contract->identifier)
 @section('eyebrow', 'Contractdetail')
 @section('page-title', $contract->identifier)
-@section('page-subtitle', 'Alle contractfunctionaliteit uit de oude webapplicatie is hier samengebracht in de Laravel-huisstijl.')
+@section('page-subtitle', 'Zelfstandig contractrecord met eigen contractgebruikers, querycriteria, meetdatafilters en contract-endpoints.')
 
 @section('back-button')
     <div class="inline-form">
@@ -20,28 +20,49 @@
 @endsection
 
 @section('content')
+<section class="summary-grid contract-summary-grid">
+    <article class="summary-card"><span class="summary-label">Bedrijf</span><strong class="summary-value summary-value-text">{{ $contract->company_name }}</strong></article>
+    <article class="summary-card"><span class="summary-label">Soort</span><strong class="summary-value summary-value-text">{{ $contract->type_name }}</strong></article>
+    <article class="summary-card"><span class="summary-label">Status</span><strong class="summary-value summary-value-text">{{ $contract->status ?: 'Concept' }}</strong></article>
+    <article class="summary-card"><span class="summary-label">Contractgebruikers</span><strong class="summary-value">{{ count($authorizedUsers) }}</strong></article>
+</section>
+
 <section class="panel">
-    <div class="panel-header panel-header-stack"><div><h2>Contractsamenvatting</h2><p class="muted">Basisinformatie van het contract in één compact overzicht.</p></div><div class="header-badges"><span class="info-pill">{{ $contract->type_name }}</span></div></div>
-    <div class="details-grid">
-        <div><strong>Bedrijf</strong><div>{{ $contract->company_name }}</div></div>
-        <div><strong>Type</strong><div>{{ $contract->type_name }}</div></div>
-        <div><strong>Prijs</strong><div>€ {{ number_format((float) $contract->price, 2, ',', '.') }}</div></div>
-        <div><strong>Looptijd</strong><div>{{ $contract->start_date }} t/m {{ $contract->end_date ?? 'Doorlopend' }}</div></div>
-        <div><strong>Token</strong><div><code>{{ $contract->token ?: '-' }}</code></div></div>
-        <div><strong>Notities</strong><div>{{ $contract->notes ?: '-' }}</div></div>
+    <div class="panel-header panel-header-stack">
+        <div>
+            <h2>Contractgegevens</h2>
+            <p class="muted">Periode 3: eigen identifier, omschrijving, bedrijf, looptijd en app-URL. Contracten zijn hier losgekoppeld van abonnementen.</p>
+        </div>
+    </div>
+    <div class="details-grid-2">
+        <div><strong>Identifier</strong><div class="inline-code-block">{{ $contract->identifier }}</div></div>
+        <div><strong>Contractsoort</strong><div class="inline-code-block">{{ $contract->type_name }}</div></div>
+        <div style="grid-column:1 / -1;"><strong>Omschrijving</strong><div class="inline-code-block">{{ $contract->description ?: 'Geen omschrijving vastgelegd.' }}</div></div>
+        <div><strong>Startdatum</strong><div class="inline-code-block">{{ $contract->start_date ? \Carbon\Carbon::parse($contract->start_date)->format('d-m-Y') : '—' }}</div></div>
+        <div><strong>Einddatum</strong><div class="inline-code-block">{{ $contract->end_date ? \Carbon\Carbon::parse($contract->end_date)->format('d-m-Y') : 'Doorlopend' }}</div></div>
+        <div><strong>App-URL</strong><div class="inline-code-block">{{ $contract->app_url ?: 'Niet ingesteld' }}</div></div>
+        <div><strong>Prijs</strong><div class="inline-code-block">€ {{ number_format((float) $contract->price, 2, ',', '.') }}</div></div>
+        <div><strong>Token</strong><div class="inline-code-block">{{ $contract->api_token ?: 'Nog geen token ingesteld.' }}</div></div>
+        <div style="grid-column:1 / -1;"><strong>Notities</strong><div class="inline-code-block contract-note-box">{{ $contract->notes ?: 'Geen extra notities.' }}</div></div>
     </div>
 </section>
 
+
 <section class="panel" style="margin-top:18px;">
-    <div class="panel-header"><div><h2>Gekoppelde stations</h2><p class="muted">Overgenomen van de abonnementskoppeling waarop het contract technisch draait.</p></div></div>
+    <div class="panel-header panel-header-stack">
+        <div>
+            <h2>Contactpersonen</h2>
+            <p class="muted">Het contract hangt aan een bedrijf met één of meer contactpersonen uit de bedrijfsadministratie.</p>
+        </div>
+    </div>
     <div class="table-wrapper">
         <table class="data-table compact-table">
-            <thead><tr><th>Station</th><th>Locatie</th><th>Latitude</th><th>Longitude</th></tr></thead>
+            <thead><tr><th>Naam</th><th>E-mail</th><th>Telefoon</th><th>Functie</th></tr></thead>
             <tbody>
-                @forelse($stations as $station)
-                <tr><td>{{ $station->stn }}</td><td>{{ $station->location_label ?: 'Onbekend' }}</td><td>{{ $station->lat }}</td><td>{{ $station->lon }}</td></tr>
+                @forelse($contacts as $contact)
+                <tr><td>{{ $contact->name }}</td><td>{{ $contact->email ?: '—' }}</td><td>{{ $contact->phone ?: '—' }}</td><td>{{ $contact->function ?: ($contact->title ?: '—') }}</td></tr>
                 @empty
-                <tr><td colspan="4" class="muted">Geen stations gekoppeld.</td></tr>
+                <tr><td colspan="4" class="muted">Nog geen contactpersonen gekoppeld aan dit bedrijf.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -49,163 +70,104 @@
 </section>
 
 <section class="panel" style="margin-top:18px;">
-    <div class="panel-header"><div><h2>Geautoriseerde gebruikers</h2><p class="muted">CRUD-beheer per contract, zodat toegang volledig beheerd kan worden.</p></div></div>
-
-    <div class="contract-role-permissions">
-        <div class="contract-role-permissions-header">
-            <div>
-                <h3>Rollen en bevoegdheden</h3>
-                <p class="muted">Hier bepaal je per contract wat een Beheerder of Gebruiker binnen dit contract mag doen.</p>
-            </div>
+    <div class="panel-header panel-header-stack">
+        <div>
+            <h2>Contract-endpoints</h2>
+            <p class="muted">Voorbereid voor de contract-API laag: login, querydata, stations, stationdetail, users en logout.</p>
         </div>
-        @if(auth()->user()?->hasTask('manage_contract_users'))
-        <form method="POST" action="{{ route('contracts.role-permissions.update', $contract->identifier) }}" class="stack-form">
-            @csrf
-            @method('PUT')
-            <div class="table-wrapper">
-                <table class="data-table compact-table permissions-table">
-                    <thead>
-                        <tr>
-                            <th>Bevoegdheid</th>
-                            <th>Beheerder</th>
-                            <th>Gebruiker</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Contract bekijken</td>
-                            <td><input type="checkbox" name="roles[Beheerder][can_view_contract]" value="1" {{ !empty($rolePermissions['Beheerder']['can_view_contract']) ? 'checked' : '' }}></td>
-                            <td><input type="checkbox" name="roles[Gebruiker][can_view_contract]" value="1" {{ !empty($rolePermissions['Gebruiker']['can_view_contract']) ? 'checked' : '' }}></td>
-                        </tr>
-                        <tr>
-                            <td>Queries inzien</td>
-                            <td><input type="checkbox" name="roles[Beheerder][can_view_queries]" value="1" {{ !empty($rolePermissions['Beheerder']['can_view_queries']) ? 'checked' : '' }}></td>
-                            <td><input type="checkbox" name="roles[Gebruiker][can_view_queries]" value="1" {{ !empty($rolePermissions['Gebruiker']['can_view_queries']) ? 'checked' : '' }}></td>
-                        </tr>
-                        <tr>
-                            <td>Queries beheren</td>
-                            <td><input type="checkbox" name="roles[Beheerder][can_manage_queries]" value="1" {{ !empty($rolePermissions['Beheerder']['can_manage_queries']) ? 'checked' : '' }}></td>
-                            <td><input type="checkbox" name="roles[Gebruiker][can_manage_queries]" value="1" {{ !empty($rolePermissions['Gebruiker']['can_manage_queries']) ? 'checked' : '' }}></td>
-                        </tr>
-                        <tr>
-                            <td>Geautoriseerde gebruikers beheren</td>
-                            <td><input type="checkbox" name="roles[Beheerder][can_manage_authorized_users]" value="1" {{ !empty($rolePermissions['Beheerder']['can_manage_authorized_users']) ? 'checked' : '' }}></td>
-                            <td><input type="checkbox" name="roles[Gebruiker][can_manage_authorized_users]" value="1" {{ !empty($rolePermissions['Gebruiker']['can_manage_authorized_users']) ? 'checked' : '' }}></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="inline-form" style="margin-top:16px;"><button class="secondary-button compact-button" type="submit">Bevoegdheden opslaan</button></div>
-        </form>
-        @else
-        <p class="muted">Alleen gebruikers met beheertaken kunnen deze bevoegdheden aanpassen.</p>
-        @endif
+    </div>
+    <div class="details-grid-2">
+        <div><strong>Login</strong><div class="inline-code-block">{{ $apiEndpoints['login'] }}</div></div>
+        <div><strong>Query data</strong><div class="inline-code-block">{{ $apiEndpoints['query_data'] }}</div></div>
+        <div><strong>Stations</strong><div class="inline-code-block">{{ $apiEndpoints['stations'] }}</div></div>
+        <div><strong>Stationdetail</strong><div class="inline-code-block">{{ $apiEndpoints['station'] }}</div></div>
+        <div><strong>Gebruikers</strong><div class="inline-code-block">{{ $apiEndpoints['users'] }}</div></div>
+        <div><strong>Logout</strong><div class="inline-code-block">{{ $apiEndpoints['logout'] }}</div></div>
+    </div>
+</section>
+
+<section class="panel" style="margin-top:18px;">
+    <div class="panel-header panel-header-stack">
+        <div>
+            <h2>Contractgebruikers</h2>
+            <p class="muted">Eigen contract-user tabel met login-id, machtiging admin/user, e-mail, status en contractkoppeling.</p>
+        </div>
     </div>
 
     @if(auth()->user()?->hasTask('manage_contract_users'))
-    <form method="POST" action="{{ route('contracts.authorized-users.store', $contract->identifier) }}" class="stack-form" style="margin-top:18px;">
+    <form method="POST" action="{{ route('contracts.authorized-users.store', $contract->identifier) }}" class="inline-manage-form" style="margin-bottom:18px;">
         @csrf
         <div class="inline-manage-grid contract-user-form-grid">
-            <div class="inline-manage-field">
-                <label for="new-user-name">Naam</label>
-                <input id="new-user-name" name="name" value="{{ old('name') }}" required>
-            </div>
-            <div class="inline-manage-field">
-                <label for="new-user-email">E-mail</label>
-                <input id="new-user-email" name="email" type="email" value="{{ old('email') }}" required>
-            </div>
-            <div class="inline-manage-field">
-                <label for="new-user-role">Rol bij contract</label>
-                <select id="new-user-role" name="role_label" required>
-                    @foreach($authorizedUserRoles as $authorizedUserRole)
-                        <option value="{{ $authorizedUserRole }}" {{ old('role_label', 'Gebruiker') === $authorizedUserRole ? 'selected' : '' }}>{{ $authorizedUserRole }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="inline-manage-field">
-                <label for="new-user-status">Status</label>
-                <input id="new-user-status" name="status" value="{{ old('status', 'Actief') }}">
-            </div>
-            <div class="inline-manage-field inline-manage-full">
-                <label for="new-user-notes">Notities</label>
-                <input id="new-user-notes" name="notes" value="{{ old('notes') }}">
-            </div>
+            <div class="inline-manage-field"><label>Naam</label><input name="name" value="{{ old('name') }}"></div>
+            <div class="inline-manage-field"><label>E-mail</label><input name="email" type="email" value="{{ old('email') }}"></div>
+            <div class="inline-manage-field"><label>Login-id</label><input name="user_identifier" value="{{ old('user_identifier') }}"></div>
+            <div class="inline-manage-field"><label>Wachtwoord</label><input name="password" type="password"></div>
+            <div class="inline-manage-field"><label>Machtiging</label><select name="permission_level">@foreach(['admin' => 'Admin', 'user' => 'User'] as $value => $label)<option value="{{ $value }}" {{ old('permission_level', 'user') === $value ? 'selected' : '' }}>{{ $label }}</option>@endforeach</select></div>
+            <div class="inline-manage-field"><label>Contractrol</label><select name="role_label">@foreach($authorizedUserRoles as $role)<option value="{{ $role }}" {{ old('role_label') === $role ? 'selected' : '' }}>{{ $role }}</option>@endforeach</select></div>
+            <div class="inline-manage-field"><label>Status</label><input name="status" value="{{ old('status', 'Actief') }}"></div>
+            <div class="inline-manage-field inline-manage-full"><label>Notities</label><textarea name="notes">{{ old('notes') }}</textarea></div>
         </div>
-        <div class="inline-form" style="margin-top:18px;"><button class="primary-button compact-button" type="submit">Gebruiker toevoegen</button></div>
+        <div class="inline-manage-actions"><button class="primary-button compact-button" type="submit">Gebruiker toevoegen</button></div>
     </form>
     @endif
-    <div class="table-wrapper" style="margin-top:18px;">
+
+    <div class="table-wrapper">
         <table class="data-table compact-table">
-            <thead><tr><th>Naam</th><th>E-mail</th><th>Rol</th><th>Status</th><th>Notities</th><th>Acties</th></tr></thead>
+            <thead><tr><th>Naam</th><th>Login-id</th><th>E-mail</th><th>Machtiging</th><th>Contractrol</th><th>Status</th><th>Acties</th></tr></thead>
             <tbody>
                 @forelse($authorizedUsers as $user)
                 <tr>
                     <td>{{ $user->name }}</td>
-                    <td>{{ $user->email }}</td>
-                    <td>{{ $user->role_label ?: '—' }}</td>
-                    <td>{{ $user->status }}</td>
-                    <td>{{ $user->notes ?: '—' }}</td>
-                    <td>
+                    <td>{{ $user->user_identifier ?: '—' }}</td>
+                    <td class="cell-break">{{ $user->email }}</td>
+                    <td>{{ strtoupper($user->permission_level ?: 'user') }}</td>
+                    <td>{{ $user->role_label }}</td>
+                    <td>{{ $user->status ?: '—' }}</td>
+                    <td class="cell-actions">
                         @if(auth()->user()?->hasTask('manage_contract_users'))
-                            <details class="inline-manage-toggle">
-                                <summary class="inline-manage-summary">Beheren</summary>
-                            </details>
+                            <button
+                                type="button"
+                                class="secondary-button compact-button inline-manage-button"
+                                onclick="const row=this.closest('tr').nextElementSibling; if(row){ row.classList.toggle('is-open'); this.setAttribute('aria-expanded', row.classList.contains('is-open') ? 'true' : 'false'); }"
+                                aria-expanded="false"
+                            >Beheren</button>
                         @else
-                        —
+                            <span class="muted">Geen beheerrechten</span>
                         @endif
                     </td>
                 </tr>
                 @if(auth()->user()?->hasTask('manage_contract_users'))
-                <tr class="inline-manage-row">
-                    <td colspan="6">
-                        <details class="inline-manage-panel inline-manage-panel-full">
-                            <summary class="inline-manage-summary">Beheren</summary>
+                <tr class="inline-manage-row-full">
+                    <td colspan="7">
+                        <div class="inline-manage-panel inline-manage-panel-full-row">
                             <div class="inline-manage-body">
                                 <form method="POST" action="{{ route('contracts.authorized-users.update', [$contract->identifier, $user->id]) }}" class="inline-manage-form">
                                     @csrf
                                     @method('PUT')
-                                    <div class="inline-manage-grid">
-                                        <div class="inline-manage-field">
-                                            <label for="authorized-user-name-{{ $user->id }}">Naam</label>
-                                            <input id="authorized-user-name-{{ $user->id }}" name="name" value="{{ $user->name }}" required>
-                                        </div>
-                                        <div class="inline-manage-field">
-                                            <label for="authorized-user-email-{{ $user->id }}">E-mail</label>
-                                            <input id="authorized-user-email-{{ $user->id }}" name="email" type="email" value="{{ $user->email }}" required>
-                                        </div>
-                                        <div class="inline-manage-field">
-                                            <label for="authorized-user-role-{{ $user->id }}">Rol bij contract</label>
-                                            <select id="authorized-user-role-{{ $user->id }}" name="role_label" required>
-                                                @foreach($authorizedUserRoles as $authorizedUserRole)
-                                                    <option value="{{ $authorizedUserRole }}" {{ $user->role_label === $authorizedUserRole ? 'selected' : '' }}>{{ $authorizedUserRole }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="inline-manage-field">
-                                            <label for="authorized-user-status-{{ $user->id }}">Status</label>
-                                            <input id="authorized-user-status-{{ $user->id }}" name="status" value="{{ $user->status }}">
-                                        </div>
-                                        <div class="inline-manage-field inline-manage-full">
-                                            <label for="authorized-user-notes-{{ $user->id }}">Notities</label>
-                                            <input id="authorized-user-notes-{{ $user->id }}" name="notes" value="{{ $user->notes }}">
-                                        </div>
+                                    <div class="inline-manage-grid inline-manage-grid-wide">
+                                        <div class="inline-manage-field"><label>Naam</label><input name="name" value="{{ $user->name }}"></div>
+                                        <div class="inline-manage-field"><label>E-mail</label><input name="email" type="email" value="{{ $user->email }}"></div>
+                                        <div class="inline-manage-field"><label>Login-id</label><input name="user_identifier" value="{{ $user->user_identifier }}"></div>
+                                        <div class="inline-manage-field"><label>Nieuw wachtwoord</label><input name="password" type="password"></div>
+                                        <div class="inline-manage-field"><label>Machtiging</label><select name="permission_level">@foreach(['admin' => 'Admin', 'user' => 'User'] as $value => $label)<option value="{{ $value }}" {{ ($user->permission_level ?: 'user') === $value ? 'selected' : '' }}>{{ $label }}</option>@endforeach</select></div>
+                                        <div class="inline-manage-field"><label>Contractrol</label><select name="role_label">@foreach($authorizedUserRoles as $role)<option value="{{ $role }}" {{ $user->role_label === $role ? 'selected' : '' }}>{{ $role }}</option>@endforeach</select></div>
+                                        <div class="inline-manage-field"><label>Status</label><input name="status" value="{{ $user->status }}"></div>
+                                        <div class="inline-manage-field inline-manage-full"><label>Notities</label><textarea name="notes">{{ $user->notes }}</textarea></div>
                                     </div>
-                                    <div class="inline-manage-actions">
-                                        <button class="secondary-button compact-button" type="submit">Opslaan</button>
-                                    </div>
+                                    <div class="inline-manage-actions"><button class="primary-button compact-button" type="submit">Opslaan</button></div>
                                 </form>
-                                <form method="POST" action="{{ route('contracts.authorized-users.destroy', [$contract->identifier, $user->id]) }}" onsubmit="return confirm('Gebruiker verwijderen uit dit contract?');" class="inline-manage-delete-form">
+                                <form method="POST" action="{{ route('contracts.authorized-users.destroy', [$contract->identifier, $user->id]) }}" class="inline-manage-delete-form" onsubmit="return confirm('Gebruiker verwijderen?');">
                                     @csrf
                                     @method('DELETE')
                                     <button class="danger-button compact-button" type="submit">Verwijderen</button>
                                 </form>
                             </div>
-                        </details>
+                        </div>
                     </td>
                 </tr>
                 @endif
                 @empty
-                <tr><td colspan="6" class="muted">Nog geen geautoriseerde gebruikers gekoppeld.</td></tr>
+                <tr><td colspan="7" class="muted">Er zijn nog geen contractgebruikers vastgelegd.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -213,104 +175,73 @@
 </section>
 
 <section class="panel" style="margin-top:18px;">
-    <div class="panel-header"><div><h2>Queries per contract</h2><p class="muted">Leg per query de stationselectie en de aan te leveren meetvelden vast.</p></div></div>
-    @php
-        $countryCodeOptions = $queryConfigurationOptions['country_codes'] ?? [];
-        $regionCodeOptions = $queryConfigurationOptions['region_codes'] ?? [];
-        $measurementFieldOptions = $queryConfigurationOptions['measurement_fields'] ?? [];
-    @endphp
+    <div class="panel-header panel-header-stack">
+        <div>
+            <h2>Queries</h2>
+            <p class="muted">Per query leg je stationselectie en meetdatafilters vast: landcodes, regio, elevation, coördinaten, datumrange, temperatuur en gekozen meetvelden. Na opslaan kun je de query testen via de contract-endpoints hierboven.</p>
+        </div>
+    </div>
 
-    @if(! $queryColumnsAvailable)
-        <p class="muted">Voer eerst de nieuwste migraties uit om querycriteria en meetvelden op te slaan.</p>
-    @elseif(auth()->user()?->hasTask('manage_contract_queries'))
-    <form method="POST" action="{{ route('contracts.queries.store', $contract->identifier) }}" class="stack-form contract-query-builder">
+    @if(auth()->user()?->hasTask('manage_contract_queries'))
+    <form method="POST" action="{{ route('contracts.queries.store', $contract->identifier) }}" class="contract-query-builder contract-query-builder-grid">
         @csrf
-        <div class="contract-query-builder-intro">
-            <div>
-                <span class="summary-label">Contractquery</span>
-                <h3>Stations selecteren en output bepalen</h3>
-                <p class="muted">Leg hier per contractquery vast welke stations en meetgegevens gebruikt moeten worden.</p>
+        <div class="contract-query-card">
+            <div class="inline-manage-grid contract-query-grid-compact">
+                <div class="inline-manage-field"><label>Naam</label><input name="name" value="{{ old('name') }}"></div>
+                <div class="inline-manage-field"><label>Endpoint</label><input name="endpoint" value="{{ old('endpoint') }}" placeholder="/IWA/contracten/{{ $contract->identifier }}/{queryID}"></div>
+                <div class="inline-manage-field"><label>Formaat</label><input name="format" value="{{ old('format', 'JSON') }}"></div>
+                <div class="inline-manage-field"><label>Status</label><input name="status" value="{{ old('status', 'Actief') }}"></div>
             </div>
         </div>
-
-        <div class="contract-query-builder-grid">
-            <section class="contract-query-card">
-                <div class="contract-query-card-header">
-                    <h4>Basisgegevens</h4>
-                    <p class="muted">Naam, status en endpoint van de query.</p>
-                </div>
-                <div class="details-grid contract-query-grid contract-query-grid-compact">
-                    <div><strong>Naam</strong><input name="name" value="{{ old('name') }}" required></div>
-                    <div><strong>Status</strong><input name="status" value="{{ old('status', 'Actief') }}"></div>
-                    <div><strong>Endpoint</strong><input name="endpoint" value="{{ old('endpoint', '/IWA/abonnement/' . $contract->identifier . '/stations') }}"></div>
-                    <div><strong>Formaat</strong><input name="format" value="{{ old('format', 'JSON') }}"></div>
-                </div>
-            </section>
-
-            <section class="contract-query-card">
-                <div class="contract-query-card-header">
-                    <h4>Meetvelden</h4>
-                    <p class="muted">Kies welke meetgegevens via deze query worden aangeleverd.</p>
-                </div>
-                <div class="contract-query-field-full">
-                    <select name="measurement_fields[]" multiple size="7">
-                        @foreach($measurementFieldOptions as $fieldKey => $fieldLabel)
-                            <option value="{{ $fieldKey }}" {{ in_array($fieldKey, old('measurement_fields', []), true) ? 'selected' : '' }}>{{ $fieldLabel }}</option>
+        <div class="contract-query-card">
+            <div class="inline-manage-field contract-query-field-full">
+                <label>Meetvelden</label>
+                <select name="measurement_fields[]" multiple>
+                    @foreach($queryConfigurationOptions['measurement_fields'] as $fieldKey => $fieldLabel)
+                        <option value="{{ $fieldKey }}" {{ collect(old('measurement_fields', []))->contains($fieldKey) ? 'selected' : '' }}>{{ $fieldLabel }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+        <div class="contract-query-card contract-query-card-wide">
+            <div class="contract-query-filters-grid">
+                <div class="contract-query-filter-block inline-manage-field">
+                    <label>Landcodes</label>
+                    <select name="country_codes[]" multiple>
+                        @foreach($queryConfigurationOptions['country_codes'] as $countryCode)
+                            <option value="{{ $countryCode }}" {{ collect(old('country_codes', []))->contains($countryCode) ? 'selected' : '' }}>{{ $countryCode }}</option>
                         @endforeach
                     </select>
-                    <div class="table-subtext">De API /measurements gebruikt alleen deze geselecteerde velden voor de actieve query.</div>
                 </div>
-            </section>
-
-            <section class="contract-query-card contract-query-card-wide">
-                <div class="contract-query-card-header">
-                    <h4>Selectiecriteria voor stations</h4>
-                    <p class="muted">Must have: landcodes, elevation en coördinaten. Regiocodes blijven beschikbaar als extra filter.</p>
+                <div class="contract-query-filter-block inline-manage-field">
+                    <label>Regiocodes</label>
+                    <select name="region_codes[]" multiple>
+                        @foreach($queryConfigurationOptions['region_codes'] as $regionCode)
+                            <option value="{{ $regionCode }}" {{ collect(old('region_codes', []))->contains($regionCode) ? 'selected' : '' }}>{{ $regionCode }}</option>
+                        @endforeach
+                    </select>
                 </div>
-                <div class="contract-query-filters-grid">
-                    <div class="contract-query-filter-block">
-                        <strong>Landcodes</strong>
-                        <select name="country_codes[]" multiple size="7">
-                            @foreach($countryCodeOptions as $countryCode)
-                                <option value="{{ $countryCode }}" {{ in_array($countryCode, old('country_codes', []), true) ? 'selected' : '' }}>{{ $countryCode }}</option>
-                            @endforeach
-                        </select>
-                        <div class="table-subtext">Beschikbare landcodes uit geolocation, nearestlocation en country.</div>
-                    </div>
-                    <div class="contract-query-filter-block">
-                        <strong>Regiocodes</strong>
-                        <select name="region_codes[]" multiple size="7">
-                            @foreach($regionCodeOptions as $regionCode)
-                                <option value="{{ $regionCode }}" {{ in_array($regionCode, old('region_codes', []), true) ? 'selected' : '' }}>{{ $regionCode }}</option>
-                            @endforeach
-                        </select>
-                        <div class="table-subtext">Could have: administrative_region1 uit nearestlocation.</div>
-                    </div>
-                    <div class="contract-query-range-grid">
-                        <div><strong>Elevation vanaf</strong><input name="elevation_min" type="number" step="0.01" value="{{ old('elevation_min') }}"></div>
-                        <div><strong>Elevation t/m</strong><input name="elevation_max" type="number" step="0.01" value="{{ old('elevation_max') }}"></div>
-                        <div><strong>Breedtegraad vanaf</strong><input name="latitude_min" type="number" step="0.000001" value="{{ old('latitude_min') }}"></div>
-                        <div><strong>Breedtegraad t/m</strong><input name="latitude_max" type="number" step="0.000001" value="{{ old('latitude_max') }}"></div>
-                        <div><strong>Lengtegraad vanaf</strong><input name="longitude_min" type="number" step="0.000001" value="{{ old('longitude_min') }}"></div>
-                        <div><strong>Lengtegraad t/m</strong><input name="longitude_max" type="number" step="0.000001" value="{{ old('longitude_max') }}"></div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="contract-query-card contract-query-card-wide">
-                <div class="contract-query-card-header">
-                    <h4>Notities</h4>
-                    <p class="muted">Gebruik dit voor uitleg of uitzonderingen binnen het contract.</p>
-                </div>
-                <div class="contract-query-field-full">
-                    <input name="notes" value="{{ old('notes') }}">
-                </div>
-            </section>
+            </div>
+            <div class="contract-query-range-grid" style="margin-top:14px;">
+                <div class="inline-manage-field"><label>Elevation min</label><input type="number" step="0.01" name="elevation_min" value="{{ old('elevation_min') }}"></div>
+                <div class="inline-manage-field"><label>Elevation max</label><input type="number" step="0.01" name="elevation_max" value="{{ old('elevation_max') }}"></div>
+                <div class="inline-manage-field"><label>Breedtegraad min</label><input type="number" step="0.000001" name="latitude_min" value="{{ old('latitude_min') }}"></div>
+                <div class="inline-manage-field"><label>Breedtegraad max</label><input type="number" step="0.000001" name="latitude_max" value="{{ old('latitude_max') }}"></div>
+                <div class="inline-manage-field"><label>Lengtegraad min</label><input type="number" step="0.000001" name="longitude_min" value="{{ old('longitude_min') }}"></div>
+                <div class="inline-manage-field"><label>Lengtegraad max</label><input type="number" step="0.000001" name="longitude_max" value="{{ old('longitude_max') }}"></div>
+                <div class="inline-manage-field"><label>Meetdatum vanaf</label><input type="date" name="measurement_date_from" value="{{ old('measurement_date_from') }}"></div>
+                <div class="inline-manage-field"><label>Meetdatum t/m</label><input type="date" name="measurement_date_to" value="{{ old('measurement_date_to') }}"></div>
+                <div class="inline-manage-field"><label>Temperatuur min</label><input type="number" step="0.01" name="temperature_min" value="{{ old('temperature_min') }}"></div>
+                <div class="inline-manage-field"><label>Temperatuur max</label><input type="number" step="0.01" name="temperature_max" value="{{ old('temperature_max') }}"></div>
+            </div>
         </div>
-
-        <div class="inline-form contract-query-actions"><button class="primary-button" type="submit">Query toevoegen</button></div>
+        <div class="contract-query-card contract-query-card-wide">
+            <div class="inline-manage-field contract-query-field-full"><label>Notities</label><textarea name="notes">{{ old('notes') }}</textarea></div>
+        </div>
+        <div class="contract-query-actions"><button class="primary-button compact-button" type="submit">Query toevoegen</button></div>
     </form>
     @endif
+
     <div class="table-wrapper" style="margin-top:18px;">
         <table class="data-table compact-table">
             <thead><tr><th>Naam</th><th>Status</th><th>Meetvelden</th><th>Selectiecriteria</th><th>Endpoint</th><th>Acties</th></tr></thead>
@@ -318,131 +249,98 @@
                 @forelse($queries as $query)
                 <tr>
                     <td>{{ $query->name }}</td>
-                    <td>{{ $query->status }}</td>
-                    <td>
-                        @if($query->measurement_field_labels)
-                            {{ implode(', ', $query->measurement_field_labels) }}
+                    <td>{{ $query->status ?: '—' }}</td>
+                    <td class="cell-break">{{ $query->measurement_field_labels ? implode(', ', $query->measurement_field_labels) : '—' }}</td>
+                    <td class="cell-break">{{ $query->criteria_summary }}</td>
+                    <td><code class="code-wrap">{{ $query->endpoint ?: '—' }}</code></td>
+                    <td class="cell-actions">
+                        @if(auth()->user()?->hasTask('manage_contract_queries'))
+                        <button
+                            type="button"
+                            class="secondary-button compact-button inline-manage-button"
+                            onclick="const row=this.closest('tr').nextElementSibling; if(row){ row.classList.toggle('is-open'); this.setAttribute('aria-expanded', row.classList.contains('is-open') ? 'true' : 'false'); }"
+                            aria-expanded="false"
+                        >Beheren</button>
                         @else
-                            —
+                        <span class="muted">Geen beheerrechten</span>
                         @endif
                     </td>
-                    <td>{{ $query->criteria_summary }}</td>
-                    <td>{{ $query->endpoint ?: '—' }}</td>
-                    <td>
-                        @if($queryColumnsAvailable && auth()->user()?->hasTask('manage_contract_queries'))
-                        <details class="inline-manage-panel inline-manage-panel-full">
-                            <summary class="inline-manage-summary">Beheren</summary>
+                </tr>
+                @if(auth()->user()?->hasTask('manage_contract_queries'))
+                <tr class="inline-manage-row-full">
+                    <td colspan="6">
+                        <div class="inline-manage-panel inline-manage-panel-full-row">
                             <div class="inline-manage-body">
-                                <form method="POST" action="{{ route('contracts.queries.update', [$contract->identifier, $query->id]) }}" class="inline-manage-form">
+                                <form method="POST" action="{{ route('contracts.queries.update', [$contract->identifier, $query->id]) }}" class="contract-query-builder contract-query-builder-grid">
                                     @csrf
                                     @method('PUT')
-                                    <div class="inline-manage-grid">
-                                        <div class="inline-manage-field">
-                                            <label for="query-name-{{ $query->id }}">Naam</label>
-                                            <input id="query-name-{{ $query->id }}" name="name" value="{{ $query->name }}" required>
+                                    <div class="contract-query-card">
+                                        <div class="inline-manage-grid contract-query-grid-compact">
+                                            <div class="inline-manage-field"><label>Naam</label><input name="name" value="{{ $query->name }}"></div>
+                                            <div class="inline-manage-field"><label>Endpoint</label><input name="endpoint" value="{{ $query->endpoint }}"></div>
+                                            <div class="inline-manage-field"><label>Formaat</label><input name="format" value="{{ $query->format }}"></div>
+                                            <div class="inline-manage-field"><label>Status</label><input name="status" value="{{ $query->status }}"></div>
                                         </div>
-                                        <div class="inline-manage-field">
-                                            <label for="query-status-{{ $query->id }}">Status</label>
-                                            <input id="query-status-{{ $query->id }}" name="status" value="{{ $query->status }}">
-                                        </div>
-                                        <div class="inline-manage-field inline-manage-full">
-                                            <label for="query-endpoint-{{ $query->id }}">Endpoint</label>
-                                            <input id="query-endpoint-{{ $query->id }}" name="endpoint" value="{{ $query->endpoint }}">
-                                        </div>
-                                        <div class="inline-manage-field inline-manage-full">
-                                            <label for="query-fields-{{ $query->id }}">Meetvelden</label>
-                                            <select id="query-fields-{{ $query->id }}" name="measurement_fields[]" multiple size="6">
-                                                @foreach($measurementFieldOptions as $fieldKey => $fieldLabel)
+                                    </div>
+                                    <div class="contract-query-card">
+                                        <div class="inline-manage-field contract-query-field-full">
+                                            <label>Meetvelden</label>
+                                            <select name="measurement_fields[]" multiple>
+                                                @foreach($queryConfigurationOptions['measurement_fields'] as $fieldKey => $fieldLabel)
                                                     <option value="{{ $fieldKey }}" {{ in_array($fieldKey, $query->measurement_fields_list, true) ? 'selected' : '' }}>{{ $fieldLabel }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
-                                        <div class="inline-manage-field">
-                                            <label for="query-country-codes-{{ $query->id }}">Landcodes</label>
-                                            <select id="query-country-codes-{{ $query->id }}" name="country_codes[]" multiple size="6">
-                                                @foreach($countryCodeOptions as $countryCode)
-                                                    <option value="{{ $countryCode }}" {{ in_array($countryCode, $query->country_codes_list, true) ? 'selected' : '' }}>{{ $countryCode }}</option>
-                                                @endforeach
-                                            </select>
+                                    </div>
+                                    <div class="contract-query-card contract-query-card-wide">
+                                        <div class="contract-query-filters-grid">
+                                            <div class="contract-query-filter-block inline-manage-field">
+                                                <label>Landcodes</label>
+                                                <select name="country_codes[]" multiple>
+                                                    @foreach($queryConfigurationOptions['country_codes'] as $countryCode)
+                                                        <option value="{{ $countryCode }}" {{ in_array($countryCode, $query->country_codes_list, true) ? 'selected' : '' }}>{{ $countryCode }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="contract-query-filter-block inline-manage-field">
+                                                <label>Regiocodes</label>
+                                                <select name="region_codes[]" multiple>
+                                                    @foreach($queryConfigurationOptions['region_codes'] as $regionCode)
+                                                        <option value="{{ $regionCode }}" {{ in_array($regionCode, $query->region_codes_list, true) ? 'selected' : '' }}>{{ $regionCode }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div class="inline-manage-field">
-                                            <label for="query-region-codes-{{ $query->id }}">Regiocodes</label>
-                                            <select id="query-region-codes-{{ $query->id }}" name="region_codes[]" multiple size="6">
-                                                @foreach($regionCodeOptions as $regionCode)
-                                                    <option value="{{ $regionCode }}" {{ in_array($regionCode, $query->region_codes_list, true) ? 'selected' : '' }}>{{ $regionCode }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="inline-manage-field">
-                                            <label for="query-elevation-min-{{ $query->id }}">Elevation vanaf</label>
-                                            <input id="query-elevation-min-{{ $query->id }}" name="elevation_min" type="number" step="0.01" value="{{ property_exists($query, 'elevation_min') ? $query->elevation_min : '' }}">
-                                        </div>
-                                        <div class="inline-manage-field">
-                                            <label for="query-elevation-max-{{ $query->id }}">Elevation t/m</label>
-                                            <input id="query-elevation-max-{{ $query->id }}" name="elevation_max" type="number" step="0.01" value="{{ property_exists($query, 'elevation_max') ? $query->elevation_max : '' }}">
-                                        </div>
-                                        <div class="inline-manage-field">
-                                            <label for="query-latitude-min-{{ $query->id }}">Breedtegraad vanaf</label>
-                                            <input id="query-latitude-min-{{ $query->id }}" name="latitude_min" type="number" step="0.000001" value="{{ property_exists($query, 'latitude_min') ? $query->latitude_min : '' }}">
-                                        </div>
-                                        <div class="inline-manage-field">
-                                            <label for="query-latitude-max-{{ $query->id }}">Breedtegraad t/m</label>
-                                            <input id="query-latitude-max-{{ $query->id }}" name="latitude_max" type="number" step="0.000001" value="{{ property_exists($query, 'latitude_max') ? $query->latitude_max : '' }}">
-                                        </div>
-                                        <div class="inline-manage-field">
-                                            <label for="query-longitude-min-{{ $query->id }}">Lengtegraad vanaf</label>
-                                            <input id="query-longitude-min-{{ $query->id }}" name="longitude_min" type="number" step="0.000001" value="{{ property_exists($query, 'longitude_min') ? $query->longitude_min : '' }}">
-                                        </div>
-                                        <div class="inline-manage-field">
-                                            <label for="query-longitude-max-{{ $query->id }}">Lengtegraad t/m</label>
-                                            <input id="query-longitude-max-{{ $query->id }}" name="longitude_max" type="number" step="0.000001" value="{{ property_exists($query, 'longitude_max') ? $query->longitude_max : '' }}">
-                                        </div>
-                                        <div class="inline-manage-field inline-manage-full">
-                                            <label for="query-notes-{{ $query->id }}">Notities</label>
-                                            <input id="query-notes-{{ $query->id }}" name="notes" value="{{ $query->notes }}">
+                                        <div class="contract-query-range-grid" style="margin-top:14px;">
+                                            <div class="inline-manage-field"><label>Elevation min</label><input type="number" step="0.01" name="elevation_min" value="{{ $query->elevation_min }}"></div>
+                                            <div class="inline-manage-field"><label>Elevation max</label><input type="number" step="0.01" name="elevation_max" value="{{ $query->elevation_max }}"></div>
+                                            <div class="inline-manage-field"><label>Breedtegraad min</label><input type="number" step="0.000001" name="latitude_min" value="{{ $query->latitude_min }}"></div>
+                                            <div class="inline-manage-field"><label>Breedtegraad max</label><input type="number" step="0.000001" name="latitude_max" value="{{ $query->latitude_max }}"></div>
+                                            <div class="inline-manage-field"><label>Lengtegraad min</label><input type="number" step="0.000001" name="longitude_min" value="{{ $query->longitude_min }}"></div>
+                                            <div class="inline-manage-field"><label>Lengtegraad max</label><input type="number" step="0.000001" name="longitude_max" value="{{ $query->longitude_max }}"></div>
+                                            <div class="inline-manage-field"><label>Meetdatum vanaf</label><input type="date" name="measurement_date_from" value="{{ $query->measurement_date_from }}"></div>
+                                            <div class="inline-manage-field"><label>Meetdatum t/m</label><input type="date" name="measurement_date_to" value="{{ $query->measurement_date_to }}"></div>
+                                            <div class="inline-manage-field"><label>Temperatuur min</label><input type="number" step="0.01" name="temperature_min" value="{{ $query->temperature_min }}"></div>
+                                            <div class="inline-manage-field"><label>Temperatuur max</label><input type="number" step="0.01" name="temperature_max" value="{{ $query->temperature_max }}"></div>
                                         </div>
                                     </div>
-                                    <div class="inline-manage-actions">
-                                        <button class="secondary-button compact-button" type="submit">Opslaan</button>
+                                    <div class="contract-query-card contract-query-card-wide">
+                                        <div class="inline-manage-field contract-query-field-full"><label>Notities</label><textarea name="notes">{{ $query->notes }}</textarea></div>
                                     </div>
+                                    <div class="inline-manage-actions"><button class="primary-button compact-button" type="submit">Opslaan</button></div>
                                 </form>
-                                <form method="POST" action="{{ route('contracts.queries.destroy', [$contract->identifier, $query->id]) }}" onsubmit="return confirm('Deze query verwijderen?');" class="inline-manage-delete-form">
+                                <form method="POST" action="{{ route('contracts.queries.destroy', [$contract->identifier, $query->id]) }}" class="inline-manage-delete-form" onsubmit="return confirm('Query verwijderen?');">
                                     @csrf
                                     @method('DELETE')
                                     <button class="danger-button compact-button" type="submit">Verwijderen</button>
                                 </form>
                             </div>
-                        </details>
-                        @else
-                        —
-                        @endif
+                        </div>
                     </td>
                 </tr>
+                @endif
                 @empty
-                <tr><td colspan="6" class="muted">Nog geen queries gekoppeld aan dit contract.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<section class="panel" style="margin-top:18px;">
-    <div class="panel-header"><div><h2>REST-API activiteit</h2><p class="muted">Historie van endpointgebruik voor dit contract.</p></div></div>
-    <div class="table-wrapper">
-        <table class="data-table compact-table">
-            <thead><tr><th>Datum</th><th>Tijd</th><th>Endpoint</th><th>Authorized</th><th>Bestanden</th><th>Data</th></tr></thead>
-            <tbody>
-                @forelse ($activity as $row)
-                <tr>
-                    <td>{{ $row->activity_date }}</td>
-                    <td>{{ $row->activity_time }}</td>
-                    <td>{{ $row->endpoint_used }}</td>
-                    <td>{{ (int) ($row->authorized ?? 0) === 1 ? 'Ja' : 'Nee' }}</td>
-                    <td>{{ $row->files_downloaded ?? 0 }}</td>
-                    <td>{{ $row->data_transferred ?? 0 }}</td>
-                </tr>
-                @empty
-                <tr><td colspan="6" class="muted">Geen activiteit geregistreerd.</td></tr>
+                <tr><td colspan="6" class="muted">Er zijn nog geen queries vastgelegd voor dit contract.</td></tr>
                 @endforelse
             </tbody>
         </table>

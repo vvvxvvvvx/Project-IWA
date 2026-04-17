@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'auth.subscription' => \App\Http\Middleware\VerifySubscriptionToken::class,
+            'auth.contract' => \App\Http\Middleware\VerifyContractJwt::class,
             'task' => \App\Http\Middleware\CheckTask::class,
         ]);
     })

@@ -214,3 +214,151 @@ body {
 .contract-query-grid-compact{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .contract-query-actions{margin-top:18px}
 @media (max-width:1100px){.contract-query-builder-intro,.contract-query-filters-grid,.contract-query-builder-grid,.contract-query-range-grid,.contract-query-grid-compact{grid-template-columns:1fr}.contract-query-builder-intro{flex-direction:column}}
+
+
+.contract-summary-grid,
+.contract-query-builder-grid,
+.inline-manage-grid,
+.details-grid-2,
+.data-table {
+    min-width: 0;
+}
+
+.contract-query-builder {
+    gap: 18px;
+}
+
+.contract-query-builder-grid {
+    align-items: start;
+}
+
+.contract-query-card,
+.inline-manage-body,
+.contract-role-permissions,
+.inline-code-block {
+    overflow: hidden;
+}
+
+.contract-query-card h4,
+.panel h2,
+.summary-value-text,
+.cell-break,
+.code-wrap,
+.inline-code-block,
+.contract-note-box,
+.data-table td,
+.data-table th,
+.contract-query-filter-block,
+.inline-manage-field label {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.code-wrap {
+    white-space: pre-wrap;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.contract-query-card {
+    height: 100%;
+}
+
+.contract-query-builder-intro,
+.contract-query-card,
+.inline-manage-body,
+.contract-role-permissions {
+    border-radius: 22px;
+}
+
+.contract-query-builder-grid {
+    grid-template-columns: repeat(2, minmax(320px, 1fr));
+}
+
+.contract-query-card-wide,
+.contract-query-actions {
+    grid-column: 1 / -1;
+}
+
+.contract-query-field-full select[multiple],
+.contract-query-filter-block select[multiple] {
+    min-height: 160px;
+    padding: 12px 14px;
+}
+
+.contract-query-range-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inline-manage-trigger {
+    display: inline-flex;
+}
+
+.inline-manage-trigger > summary {
+    margin-bottom: 0;
+}
+
+.cell-actions {
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+.inline-manage-row-full td {
+    padding: 12px 0 18px;
+    border-top: 0;
+    background: transparent;
+}
+
+.inline-manage-panel-full-row {
+    display: block;
+    width: 100%;
+}
+
+.inline-manage-panel-full-row > summary {
+    margin-bottom: 12px;
+}
+
+.inline-manage-grid-wide {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.inline-manage-field textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.contract-user-form-grid,
+.inline-manage-grid {
+    align-items: start;
+}
+
+.data-table.compact-table td,
+.data-table.compact-table th {
+    max-width: 1px;
+}
+
+@media (max-width: 1100px) {
+    .inline-manage-grid-wide,
+    .contract-query-builder-grid,
+    .contract-query-range-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.inline-manage-button[aria-expanded="true"] {
+    background: linear-gradient(135deg, #d91e2e 0%, #f04c5a 58%, #1f4ed8 100%);
+    color: #fff;
+    border-color: transparent;
+}
+
+.inline-manage-row-full {
+    display: none;
+}
+
+.inline-manage-row-full.is-open {
+    display: table-row;
+}
+
+.inline-manage-panel-full-row .inline-manage-body {
+    margin-top: 0;
+}
