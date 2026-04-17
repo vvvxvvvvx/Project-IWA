@@ -8,6 +8,8 @@ use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StationController;
+use App\Http\Controllers\StationCompareController;
+use App\Http\Controllers\ManageStationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WeatherDataController;
 use App\Http\Controllers\MeasurementController;
@@ -101,6 +103,8 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('task:view_contracts')->group(function () {
         Route::get('/contracts', [ContractController::class, 'index'])->name('contracts.index');
+        Route::get('/contracts/overview', [ContractController::class, 'overview'])->name('contracts.overview');
+        Route::get('/contracts/authorized-users', [ContractController::class, 'authorizedUsersIndex'])->name('contracts.authorized-users.index');
         Route::get('/contracts/create', [ContractController::class, 'create'])->middleware('task:manage_contracts')->name('contracts.create');
         Route::post('/contracts', [ContractController::class, 'store'])->middleware('task:manage_contracts')->name('contracts.store');
         Route::get('/contracts/{identifier}', [ContractController::class, 'show'])->name('contracts.show');
@@ -113,6 +117,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/contracts/{identifier}/authorized-users', [ContractController::class, 'storeAuthorizedUser'])->middleware('task:manage_contract_users')->name('contracts.authorized-users.store');
         Route::put('/contracts/{identifier}/authorized-users/{userId}', [ContractController::class, 'updateAuthorizedUser'])->middleware('task:manage_contract_users')->name('contracts.authorized-users.update');
         Route::delete('/contracts/{identifier}/authorized-users/{userId}', [ContractController::class, 'destroyAuthorizedUser'])->middleware('task:manage_contract_users')->name('contracts.authorized-users.destroy');
+        Route::put('/contracts/{identifier}/role-permissions', [ContractController::class, 'updateRolePermissions'])->middleware('task:manage_contract_users')->name('contracts.role-permissions.update');
 
         Route::post('/contracts/{identifier}/queries', [ContractController::class, 'storeQuery'])->middleware('task:manage_contract_queries')->name('contracts.queries.store');
         Route::put('/contracts/{identifier}/queries/{queryId}', [ContractController::class, 'updateQuery'])->middleware('task:manage_contract_queries')->name('contracts.queries.update');
@@ -157,7 +162,16 @@ Route::middleware('auth')->group(function () {
 
     // Stationspagina's.
     Route::middleware('task:view_stations')->group(function () {
-        // All station routes are already defined earlier in this file
+        Route::get('/stations', [StationController::class, 'index'])->name('stations.index');
+        Route::get('/stations/compare', [StationCompareController::class, 'index'])->name('stations.compare');
+        Route::get('/stations/manage', [ManageStationController::class, 'index'])->name('stations.manage.index');
+        Route::get('/stations/manage/create', [ManageStationController::class, 'create'])->name('stations.manage.create');
+        Route::post('/stations/manage', [ManageStationController::class, 'store'])->name('stations.manage.store');
+        Route::get('/stations/manage/{stn}', [ManageStationController::class, 'show'])->name('stations.manage.show');
+        Route::get('/stations/manage/{stn}/edit', [ManageStationController::class, 'edit'])->name('stations.manage.edit');
+        Route::put('/stations/manage/{stn}', [ManageStationController::class, 'update'])->name('stations.manage.update');
+        Route::get('/stations/{stn}', [StationController::class, 'show'])->name('stations.show');
+        Route::get('/stations/{stn}/download', [StationController::class, 'download'])->name('stations.download');
     });
 
     // Contractpagina's.
