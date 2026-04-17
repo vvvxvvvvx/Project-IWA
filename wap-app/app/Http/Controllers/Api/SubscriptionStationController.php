@@ -68,7 +68,7 @@ class SubscriptionStationController extends Controller
                 'station.longitude',
                 'station.elevation',
                 DB::raw('COALESCE(geolocation.country_code, nearestlocation.country_code) as country_code'),
-                'geolocation.country',
+                DB::raw('COALESCE(geolocation.country, geolocation_country.country, nearestlocation_country.country) as country'),
                 'geolocation.province',
                 'geolocation.city',
                 'nearestlocation.name as nearest_location',
@@ -173,6 +173,8 @@ class SubscriptionStationController extends Controller
             ->join('station', 'subscription_station.station', '=', 'station.name')
             ->leftJoin('geolocation', 'station.name', '=', 'geolocation.station_name')
             ->leftJoin('nearestlocation', 'station.name', '=', 'nearestlocation.station_name')
+            ->leftJoin('country as geolocation_country', 'geolocation.country_code', '=', 'geolocation_country.country_code')
+            ->leftJoin('country as nearestlocation_country', 'nearestlocation.country_code', '=', 'nearestlocation_country.country_code')
             ->where('subscription_station.subscription', $subscriptionId);
 
         if (! $contractQuery) {
