@@ -3,7 +3,7 @@
 @section('title', 'Contracten')
 @section('eyebrow', 'Contractbeheer')
 @section('page-title', 'Contracten')
-@section('page-subtitle', 'Overzicht van alle contracten met snelle toegang tot details, wijzigingen en beheeracties.')
+@section('page-subtitle', 'Zelfstandig contractoverzicht. Deze pagina leest alleen uit de contractentabellen en toont geen abonnementen meer.')
 
 @section('back-button')
     <div class="inline-form">
@@ -20,7 +20,7 @@
     <div class="panel-header panel-header-stack contract-hero-header">
         <div>
             <h2>Contractoverzicht</h2>
-            <p class="muted">Gebruik dit scherm om snel contracten op te zoeken en door te klikken naar detailbeheer voor gebruikers, queries, tokenbeheer en gekoppelde stations.</p>
+            <p class="muted">Per contract zie je direct het bedrijf, de contractsoort, looptijd, status en de gekoppelde gebruikers en query’s.</p>
         </div>
     </div>
 </section>
@@ -29,7 +29,7 @@
     <div class="panel-header panel-header-stack">
         <div>
             <h2>Alle contracten</h2>
-            <p class="muted">Per contract zie je direct bedrijf, looptijd, prijs en de belangrijkste beheergegevens.</p>
+            <p class="muted">De contractlaag is nu losgekoppeld van abonnementen. Alleen echte contractrecords worden hier getoond.</p>
         </div>
     </div>
     <div class="table-wrapper">
@@ -38,10 +38,10 @@
                 <tr>
                     <th>Contract</th>
                     <th>Bedrijf</th>
-                    <th>Type</th>
+                    <th>Soort</th>
+                    <th>Status</th>
                     <th>Looptijd</th>
                     <th>Prijs</th>
-                    <th>Stations</th>
                     <th>Gebruikers</th>
                     <th>Queries</th>
                     <th>API-calls</th>
@@ -53,16 +53,16 @@
                 <tr>
                     <td>
                         <a class="table-emphasis" href="{{ route('contracts.show', $contract->identifier) }}">{{ $contract->identifier }}</a>
-                        <div class="table-subtext">{{ $contract->notes ? \Illuminate\Support\Str::limit($contract->notes, 60) : 'Geen extra notities vastgelegd.' }}</div>
+                        <div class="table-subtext">{{ $contract->notes ? \Illuminate\Support\Str::limit($contract->notes, 70) : 'Geen extra notities vastgelegd.' }}</div>
                     </td>
                     <td>{{ $contract->company_name }}</td>
                     <td>{{ $contract->type_name }}</td>
+                    <td>{{ $contract->status ?: '—' }}</td>
                     <td>
                         <div>{{ $contract->start_date ? \Illuminate\Support\Carbon::parse($contract->start_date)->format('d-m-Y') : '—' }}</div>
                         <div class="table-subtext">Tot {{ $contract->end_date ? \Illuminate\Support\Carbon::parse($contract->end_date)->format('d-m-Y') : 'Doorlopend' }}</div>
                     </td>
                     <td class="table-emphasis">€ {{ number_format((float) $contract->price, 2, ',', '.') }}</td>
-                    <td>{{ $contract->station_count }}</td>
                     <td>{{ $contract->authorized_user_count }}</td>
                     <td>{{ $contract->query_count }}</td>
                     <td>{{ $contract->successful_calls ?? 0 }}</td>

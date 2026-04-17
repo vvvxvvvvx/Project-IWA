@@ -3,7 +3,7 @@
 @section('title', 'Geautoriseerde gebruikers')
 @section('eyebrow', 'Gebruikersbeheer')
 @section('page-title', 'Gebruikersoverzicht per contract')
-@section('page-subtitle', 'Centraal overzicht van alle vastgelegde contractgebruikers. Dit scherm toont alleen records die echt in de tabel contract_authorized_users staan.')
+@section('page-subtitle', 'Centraal overzicht van alle vastgelegde contractgebruikers binnen de nieuwe contractlaag.')
 
 @section('back-button')
     <div class="inline-form">
@@ -32,9 +32,11 @@
                 <tr>
                     <th>Contract</th>
                     <th>Bedrijf</th>
-                    <th>Type</th>
+                    <th>Soort</th>
                     <th>Naam</th>
                     <th>E-mail</th>
+                    <th>Login-id</th>
+                    <th>Machtiging</th>
                     <th>Rol</th>
                     <th>Status</th>
                     <th>Laatst bijgewerkt</th>
@@ -49,13 +51,15 @@
                     <td>{{ $user->type_name }}</td>
                     <td>{{ $user->name }}</td>
                     <td>{{ $user->email }}</td>
+                    <td>{{ $user->user_identifier ?: '—' }}</td>
+                    <td>{{ strtoupper($user->permission_level ?: 'user') }}</td>
                     <td>{{ $user->role_label ?: '—' }}</td>
                     <td>{{ $user->status ?: '—' }}</td>
                     <td>{{ $user->updated_at ? \Illuminate\Support\Carbon::parse($user->updated_at)->format('d-m-Y H:i') : '—' }}</td>
                     <td><a class="secondary-button compact-button" href="{{ route('contracts.show', $user->contract_identifier) }}">Open contract</a></td>
                 </tr>
                 @empty
-                <tr><td colspan="9" class="muted">Er zijn nog geen geautoriseerde gebruikers vastgelegd.</td></tr>
+                <tr><td colspan="11" class="muted">Er zijn nog geen geautoriseerde gebruikers vastgelegd.</td></tr>
                 @endforelse
             </tbody>
         </table>

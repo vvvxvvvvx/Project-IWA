@@ -13,6 +13,13 @@ class ContractController extends Controller
 {
     private const AUTHORIZED_USER_ROLES = ['Beheerder', 'Gebruiker'];
 
+    private const CONTRACT_USER_PERMISSION_LEVELS = ['admin', 'user'];
+
+    private const CONTRACT_TYPE_SEED = [
+        'data_contract' => 'Datacontract',
+        'service_contract' => 'Servicecontract',
+    ];
+
     private const MEASUREMENT_FIELD_OPTIONS = [
         'temperature' => 'Temperatuur',
         'dewpoint_temperature' => 'Dauwpunt',
@@ -38,18 +45,11 @@ class ContractController extends Controller
     {
         $contracts = $this->contractOverviewQuery()->get();
 
-        // Calculate summary statistics
         $summary = [
-            'contract_count' => DB::table('subscriptions')->count(),
-            'active_count' => DB::table('subscriptions')
-                ->whereDate('start_date', '<=', now())
-                ->whereDate('end_date', '>=', now())
-                ->count(),
-            'authorized_user_count' => DB::table('endpoint_activity')
-                ->where('authorized', 1)
-                ->distinct('identifier')
-                ->count(),
-            'query_count' => DB::table('endpoint_activity')->count(),
+            'contract_count' => $contracts->count(),
+            'active_count' => $contracts->filter(fn ($contract) => $this->isContractActive($contract))->count(),
+            'authorized_user_count' => (int) $contracts->sum('authorized_user_count'),
+            'query_count' => (int) $contracts->sum('query_count'),
         ];
 
         $recentContracts = $contracts->take(5);
@@ -60,23 +60,27 @@ class ContractController extends Controller
     public function authorizedUsersIndex(): View
     {
         $authorizedUsers = DB::table('contract_authorized_users')
-            ->join('subscriptions', 'contract_authorized_users.subscription_id', '=', 'subscriptions.id')
-            ->join('companies', 'subscriptions.company', '=', 'companies.id')
-            ->join('subscription_types', 'subscriptions.type', '=', 'subscription_types.id')
+            ->join('contracts', 'contract_authorized_users.contract_id', '=', 'contracts.id')
+            ->join('companies', 'contracts.company_id', '=', 'companies.id')
+            ->leftJoin('contract_types', 'contracts.contract_type_id', '=', 'contract_types.id')
+            ->whereNull('contract_authorized_users.deleted_at')
             ->select(
                 'contract_authorized_users.id',
                 'contract_authorized_users.name',
                 'contract_authorized_users.email',
+                'contract_authorized_users.user_identifier',
+                'contract_authorized_users.permission_level',
                 'contract_authorized_users.role_label',
                 'contract_authorized_users.status',
                 'contract_authorized_users.notes',
                 'contract_authorized_users.updated_at',
-                'subscriptions.identifier as contract_identifier',
+                'contracts.identifier as contract_identifier',
+                'contracts.status as contract_status',
                 'companies.name as company_name',
-                'subscription_types.name as type_name'
+                DB::raw("COALESCE(contract_types.name, 'Onbekend type') as type_name")
             )
             ->orderBy('companies.name')
-            ->orderBy('subscriptions.identifier')
+            ->orderBy('contracts.identifier')
             ->orderBy('contract_authorized_users.name')
             ->get();
 
@@ -94,29 +98,23 @@ class ContractController extends Controller
         $contract = $this->findContract($identifier);
         abort_if(! $contract, 404);
 
-        $stations = DB::table('subscription_station')
-            ->join('station', 'subscription_station.station', '=', 'station.name')
-            ->leftJoin('nearestlocation', 'station.name', '=', 'nearestlocation.station_name')
-            ->where('subscription_station.subscription', $contract->id)
-            ->select(
-                'station.name as stn',
-                'nearestlocation.name as location_label',
-                'station.latitude as lat',
-                'station.longitude as lon'
-            )
-            ->orderBy('station.name')
+        $contacts = DB::table('relations')
+            ->where('company', $contract->company_id)
+            ->orderBy('name')
             ->get();
 
-        $activity = DB::table('endpoint_activity')
-            ->where('identifier', $identifier)
-            ->orderByDesc('activity_date')
-            ->orderByDesc('activity_time')
-            ->limit(25)
-            ->get();
+        $activity = Schema::hasTable('contract_endpoint_activity')
+            ? DB::table('contract_endpoint_activity')
+                ->where('identifier', $identifier)
+                ->orderByDesc('activity_date')
+                ->orderByDesc('activity_time')
+                ->limit(25)
+                ->get()
+            : collect();
 
-        return view('contracts.contract-details', compact('contract', 'activity'));
         $authorizedUsers = DB::table('contract_authorized_users')
-            ->where('subscription_id', $contract->id)
+            ->where('contract_id', $contract->id)
+            ->whereNull('deleted_at')
             ->orderBy('name')
             ->get();
 
@@ -124,7 +122,7 @@ class ContractController extends Controller
         $queryColumnsAvailable = $this->contractQueryConfigurationColumnsExist();
         $queries = $this->prepareContractQueries(
             DB::table('contract_queries')
-                ->where('subscription_id', $contract->id)
+                ->where('contract_id', $contract->id)
                 ->orderBy('name')
                 ->get(),
             $queryConfigurationOptions['measurement_fields'] ?? []
@@ -132,17 +130,28 @@ class ContractController extends Controller
 
         $authorizedUserRoles = self::AUTHORIZED_USER_ROLES;
         $rolePermissions = $this->rolePermissionsForContract($contract->id);
+        $firstQuery = $queries[0] ?? null;
+        $queryIdPlaceholder = $firstQuery->id ?? '{queryID}';
+        $apiEndpoints = [
+            'login' => url('/api/IWA/contracten/login'),
+            'query_data' => url('/api/IWA/contracten/' . $contract->identifier . '/' . $queryIdPlaceholder),
+            'stations' => url('/api/IWA/contracten/' . $contract->identifier . '/' . $queryIdPlaceholder . '/stations'),
+            'station' => url('/api/IWA/contracten/' . $contract->identifier . '/station/{name}'),
+            'users' => url('/api/IWA/contracten/' . $contract->identifier . '/users'),
+            'logout' => url('/api/IWA/contract/logout'),
+        ];
 
         return view('contracts.contract-details', compact(
             'contract',
-            'stations',
             'activity',
+            'contacts',
             'authorizedUsers',
             'queries',
             'authorizedUserRoles',
             'rolePermissions',
             'queryConfigurationOptions',
-            'queryColumnsAvailable'
+            'queryColumnsAvailable',
+            'apiEndpoints'
         ));
     }
 
@@ -154,12 +163,34 @@ class ContractController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validateContract($request, null);
+        $adminUser = $this->validateContractUserForCreate($request);
+        $data['api_token'] = $data['api_token'] ?: strtoupper(bin2hex(random_bytes(12)));
+        $data['created_at'] = now();
+        $data['updated_at'] = now();
 
         try {
-            DB::table('subscriptions')->insert($data);
+            DB::transaction(function () use ($data, $adminUser) {
+                $contractId = DB::table('contracts')->insertGetId($data);
+                DB::table('contract_authorized_users')->insert([
+                    'contract_id' => $contractId,
+                    'name' => $adminUser['admin_name'],
+                    'email' => $adminUser['admin_email'],
+                    'user_identifier' => $adminUser['admin_user_identifier'],
+                    'password_hash' => bcrypt($adminUser['admin_password']),
+                    'permission_level' => 'admin',
+                    'role_label' => 'Beheerder',
+                    'status' => 'Actief',
+                    'is_active' => 1,
+                    'notes' => $adminUser['admin_notes'] ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            });
+
             return redirect()->route('contracts.index')->with('success', 'Contract aangemaakt.');
         } catch (\Throwable $e) {
             Log::error('Fout bij contract aanmaken', ['exception' => $e->getMessage(), 'payload' => $data]);
+
             return back()->withInput()->with('error', 'Contract kon niet worden aangemaakt.');
         }
     }
@@ -178,12 +209,15 @@ class ContractController extends Controller
         abort_if(! $contract, 404);
 
         $data = $this->validateContract($request, $contract->id);
+        $data['updated_at'] = now();
 
         try {
-            DB::table('subscriptions')->where('id', $contract->id)->update($data);
+            DB::table('contracts')->where('id', $contract->id)->update($data);
+
             return redirect()->route('contracts.show', $data['identifier'])->with('success', 'Contract bijgewerkt.');
         } catch (\Throwable $e) {
             Log::error('Fout bij contract bijwerken', ['exception' => $e->getMessage(), 'identifier' => $identifier, 'payload' => $data]);
+
             return back()->withInput()->with('error', 'Contract kon niet worden bijgewerkt.');
         }
     }
@@ -195,19 +229,21 @@ class ContractController extends Controller
 
         try {
             DB::transaction(function () use ($contract) {
-                DB::table('contract_authorized_users')->where('subscription_id', $contract->id)->delete();
-                DB::table('contract_queries')->where('subscription_id', $contract->id)->delete();
+                DB::table('contract_authorized_users')->where('contract_id', $contract->id)->delete();
+                DB::table('contract_queries')->where('contract_id', $contract->id)->delete();
                 if (Schema::hasTable('contract_role_permissions')) {
-                    DB::table('contract_role_permissions')->where('subscription_id', $contract->id)->delete();
+                    DB::table('contract_role_permissions')->where('contract_id', $contract->id)->delete();
                 }
-                DB::table('subscription_station')->where('subscription', $contract->id)->delete();
-                DB::table('endpoint_activity')->where('identifier', $contract->identifier)->delete();
-                DB::table('subscriptions')->where('id', $contract->id)->delete();
+                if (Schema::hasTable('contract_endpoint_activity')) {
+                    DB::table('contract_endpoint_activity')->where('identifier', $contract->identifier)->delete();
+                }
+                DB::table('contracts')->where('id', $contract->id)->delete();
             });
 
             return redirect()->route('contracts.index')->with('success', 'Contract verwijderd.');
         } catch (\Throwable $e) {
             Log::error('Fout bij contract verwijderen', ['exception' => $e->getMessage(), 'identifier' => $identifier]);
+
             return back()->with('error', 'Contract kon niet worden verwijderd.');
         }
     }
@@ -218,7 +254,7 @@ class ContractController extends Controller
         abort_if(! $contract, 404);
 
         $token = strtoupper(bin2hex(random_bytes(12)));
-        DB::table('subscriptions')->where('id', $contract->id)->update(['token' => $token]);
+        DB::table('contracts')->where('id', $contract->id)->update(['api_token' => $token, 'updated_at' => now()]);
 
         return redirect()->route('contracts.edit', $identifier)->with('success', 'Nieuw contracttoken gegenereerd.');
     }
@@ -230,7 +266,7 @@ class ContractController extends Controller
 
         $stamp = 'Contracttoken verstuurd op ' . now()->format('d-m-Y H:i');
         $notes = trim(($contract->notes ? $contract->notes . PHP_EOL : '') . $stamp);
-        DB::table('subscriptions')->where('id', $contract->id)->update(['notes' => $notes]);
+        DB::table('contracts')->where('id', $contract->id)->update(['notes' => $notes, 'updated_at' => now()]);
 
         return redirect()->route('contracts.edit', $identifier)->with('success', 'Contracttoken als verstuurd gemarkeerd.');
     }
@@ -240,19 +276,14 @@ class ContractController extends Controller
         $contract = $this->findContract($identifier);
         abort_if(! $contract, 404);
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:100'],
-            'role_label' => ['required', 'in:' . implode(',', self::AUTHORIZED_USER_ROLES)],
-            'status' => ['nullable', 'string', 'max:50'],
-            'notes' => ['nullable', 'string'],
-        ]);
-        $data['subscription_id'] = $contract->id;
+        $data = $this->validateAuthorizedUser($request, true);
+        $data['contract_id'] = $contract->id;
         $data['status'] = $data['status'] ?: 'Actief';
         $data['created_at'] = now();
         $data['updated_at'] = now();
 
         DB::table('contract_authorized_users')->insert($data);
+
         return redirect()->route('contracts.show', $identifier)->with('success', 'Geautoriseerde gebruiker toegevoegd.');
     }
 
@@ -261,17 +292,11 @@ class ContractController extends Controller
         $contract = $this->findContract($identifier);
         abort_if(! $contract, 404);
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:100'],
-            'role_label' => ['required', 'in:' . implode(',', self::AUTHORIZED_USER_ROLES)],
-            'status' => ['nullable', 'string', 'max:50'],
-            'notes' => ['nullable', 'string'],
-        ]);
+        $data = $this->validateAuthorizedUser($request, false);
         $data['updated_at'] = now();
 
         DB::table('contract_authorized_users')
-            ->where('subscription_id', $contract->id)
+            ->where('contract_id', $contract->id)
             ->where('id', $userId)
             ->update($data);
 
@@ -284,7 +309,7 @@ class ContractController extends Controller
         abort_if(! $contract, 404);
 
         DB::table('contract_authorized_users')
-            ->where('subscription_id', $contract->id)
+            ->where('contract_id', $contract->id)
             ->where('id', $userId)
             ->delete();
 
@@ -311,7 +336,7 @@ class ContractController extends Controller
 
             DB::table('contract_role_permissions')->updateOrInsert(
                 [
-                    'subscription_id' => $contract->id,
+                    'contract_id' => $contract->id,
                     'role_label' => $roleLabel,
                 ],
                 [
@@ -338,8 +363,8 @@ class ContractController extends Controller
         }
 
         $data = $this->validateContractQuery($request);
-        $data['subscription_id'] = $contract->id;
-        $data['endpoint'] = $data['endpoint'] ?: '/IWA/abonnement/' . $contract->identifier . '/stations';
+        $data['contract_id'] = $contract->id;
+        $data['endpoint'] = $data['endpoint'] ?: '/IWA/contracten/' . $contract->identifier . '/{queryID}';
         $data['format'] = $data['format'] ?: 'JSON';
         $data['status'] = $data['status'] ?: 'Actief';
         $data['query_text'] = $this->buildContractQuerySummary($data);
@@ -348,6 +373,7 @@ class ContractController extends Controller
         $data['updated_at'] = now();
 
         DB::table('contract_queries')->insert($data);
+
         return redirect()->route('contracts.show', $identifier)->with('success', 'Contractquery toegevoegd.');
     }
 
@@ -361,13 +387,13 @@ class ContractController extends Controller
         }
 
         $data = $this->validateContractQuery($request);
-        $data['endpoint'] = $data['endpoint'] ?: '/IWA/abonnement/' . $contract->identifier . '/stations';
+        $data['endpoint'] = $data['endpoint'] ?: '/IWA/contracten/' . $contract->identifier . '/{queryID}';
         $data['query_text'] = $this->buildContractQuerySummary($data);
         $data = $this->contractQueryDatabasePayload($data);
         $data['updated_at'] = now();
 
         DB::table('contract_queries')
-            ->where('subscription_id', $contract->id)
+            ->where('contract_id', $contract->id)
             ->where('id', $queryId)
             ->update($data);
 
@@ -380,13 +406,53 @@ class ContractController extends Controller
         abort_if(! $contract, 404);
 
         DB::table('contract_queries')
-            ->where('subscription_id', $contract->id)
+            ->where('contract_id', $contract->id)
             ->where('id', $queryId)
             ->delete();
 
         return redirect()->route('contracts.show', $identifier)->with('success', 'Contractquery verwijderd.');
     }
 
+    private function validateAuthorizedUser(Request $request, bool $requirePassword): array
+    {
+        $passwordRule = $requirePassword ? ['required', 'string', 'min:8', 'max:255'] : ['nullable', 'string', 'min:8', 'max:255'];
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:100'],
+            'user_identifier' => ['required', 'string', 'max:100'],
+            'password' => $passwordRule,
+            'permission_level' => ['required', 'in:' . implode(',', self::CONTRACT_USER_PERMISSION_LEVELS)],
+            'role_label' => ['required', 'in:' . implode(',', self::AUTHORIZED_USER_ROLES)],
+            'status' => ['nullable', 'string', 'max:50'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        if (! empty($data['password'])) {
+            $data['password_hash'] = bcrypt($data['password']);
+        }
+
+        unset($data['password']);
+        $data['is_active'] = ($data['status'] ?? 'Actief') === 'Actief' ? 1 : 0;
+
+        return $data;
+    }
+
+    private function validateContractUserForCreate(Request $request): array
+    {
+        return $request->validate([
+            'admin_name' => ['required', 'string', 'max:100'],
+            'admin_email' => ['required', 'email', 'max:100'],
+            'admin_user_identifier' => ['required', 'string', 'max:100'],
+            'admin_password' => ['required', 'string', 'min:8', 'max:255'],
+            'admin_notes' => ['nullable', 'string'],
+        ], [], [
+            'admin_name' => 'admin naam',
+            'admin_email' => 'admin e-mail',
+            'admin_user_identifier' => 'admin user identifier',
+            'admin_password' => 'admin wachtwoord',
+        ]);
+    }
 
     private function validateContractQuery(Request $request): array
     {
@@ -402,6 +468,10 @@ class ContractController extends Controller
             'country_codes.*' => ['nullable', 'string', 'size:2'],
             'region_codes' => ['nullable', 'array'],
             'region_codes.*' => ['nullable', 'string', 'max:100'],
+            'measurement_date_from' => ['nullable', 'date'],
+            'measurement_date_to' => ['nullable', 'date', 'after_or_equal:measurement_date_from'],
+            'temperature_min' => ['nullable', 'numeric'],
+            'temperature_max' => ['nullable', 'numeric'],
             'elevation_min' => ['nullable', 'numeric'],
             'elevation_max' => ['nullable', 'numeric'],
             'latitude_min' => ['nullable', 'numeric'],
@@ -414,12 +484,8 @@ class ContractController extends Controller
         $validated['country_codes'] = $this->normalizeStringList($validated['country_codes'] ?? []);
         $validated['region_codes'] = $this->normalizeStringList($validated['region_codes'] ?? []);
 
-        foreach (['elevation_min', 'elevation_max', 'latitude_min', 'latitude_max', 'longitude_min', 'longitude_max'] as $numericField) {
-            if ($request->filled($numericField)) {
-                $validated[$numericField] = $request->input($numericField);
-            } else {
-                $validated[$numericField] = null;
-            }
+        foreach (['temperature_min', 'temperature_max', 'elevation_min', 'elevation_max', 'latitude_min', 'latitude_max', 'longitude_min', 'longitude_max'] as $numericField) {
+            $validated[$numericField] = $request->filled($numericField) ? $request->input($numericField) : null;
         }
 
         return $validated;
@@ -444,20 +510,20 @@ class ContractController extends Controller
         if (! empty($data['region_codes'])) {
             $parts[] = "Regio's: " . implode(', ', $data['region_codes']);
         }
+        if (($data['measurement_date_from'] ?? null) !== null || ($data['measurement_date_to'] ?? null) !== null) {
+            $parts[] = 'Meetdatum: ' . (($data['measurement_date_from'] ?? null) ?? 'vrij') . ' t/m ' . (($data['measurement_date_to'] ?? null) ?? 'vrij');
+        }
+        if (($data['temperature_min'] ?? null) !== null || ($data['temperature_max'] ?? null) !== null) {
+            $parts[] = 'Temperatuur: ' . (($data['temperature_min'] ?? null) ?? 'vrij') . ' t/m ' . (($data['temperature_max'] ?? null) ?? 'vrij');
+        }
         if ($data['elevation_min'] !== null || $data['elevation_max'] !== null) {
-            $min = $data['elevation_min'] !== null ? $data['elevation_min'] : 'vrij';
-            $max = $data['elevation_max'] !== null ? $data['elevation_max'] : 'vrij';
-            $parts[] = 'Elevation: ' . $min . ' t/m ' . $max;
+            $parts[] = 'Elevation: ' . ($data['elevation_min'] ?? 'vrij') . ' t/m ' . ($data['elevation_max'] ?? 'vrij');
         }
         if ($data['latitude_min'] !== null || $data['latitude_max'] !== null) {
-            $min = $data['latitude_min'] !== null ? $data['latitude_min'] : 'vrij';
-            $max = $data['latitude_max'] !== null ? $data['latitude_max'] : 'vrij';
-            $parts[] = 'Breedtegraad: ' . $min . ' t/m ' . $max;
+            $parts[] = 'Breedtegraad: ' . ($data['latitude_min'] ?? 'vrij') . ' t/m ' . ($data['latitude_max'] ?? 'vrij');
         }
         if ($data['longitude_min'] !== null || $data['longitude_max'] !== null) {
-            $min = $data['longitude_min'] !== null ? $data['longitude_min'] : 'vrij';
-            $max = $data['longitude_max'] !== null ? $data['longitude_max'] : 'vrij';
-            $parts[] = 'Lengtegraad: ' . $min . ' t/m ' . $max;
+            $parts[] = 'Lengtegraad: ' . ($data['longitude_min'] ?? 'vrij') . ' t/m ' . ($data['longitude_max'] ?? 'vrij');
         }
         if (! empty($data['measurement_fields'])) {
             $labels = array_map(fn ($field) => self::MEASUREMENT_FIELD_OPTIONS[$field] ?? $field, $data['measurement_fields']);
@@ -475,24 +541,9 @@ class ContractController extends Controller
     private function queryConfigurationOptions(): array
     {
         $countryCodes = collect()
-            ->merge(
-                DB::table('geolocation')
-                    ->whereNotNull('country_code')
-                    ->where('country_code', '!=', '')
-                    ->pluck('country_code')
-            )
-            ->merge(
-                DB::table('nearestlocation')
-                    ->whereNotNull('country_code')
-                    ->where('country_code', '!=', '')
-                    ->pluck('country_code')
-            )
-            ->merge(
-                DB::table('country')
-                    ->whereNotNull('country_code')
-                    ->where('country_code', '!=', '')
-                    ->pluck('country_code')
-            )
+            ->merge($this->safeColumnValues('geolocation', 'country_code'))
+            ->merge($this->safeColumnValues('nearestlocation', 'country_code'))
+            ->merge($this->safeColumnValues('country', 'country_code'))
             ->map(fn ($countryCode) => strtoupper(trim((string) $countryCode)))
             ->filter()
             ->unique()
@@ -500,15 +551,11 @@ class ContractController extends Controller
             ->values()
             ->all();
 
-        $regionCodes = DB::table('nearestlocation')
-            ->whereNotNull('administrative_region1')
-            ->where('administrative_region1', '!=', '')
-            ->select('administrative_region1')
-            ->distinct()
-            ->orderBy('administrative_region1')
-            ->pluck('administrative_region1')
+        $regionCodes = collect($this->safeColumnValues('nearestlocation', 'administrative_region1'))
             ->map(fn ($regionCode) => trim((string) $regionCode))
             ->filter()
+            ->unique()
+            ->sort()
             ->values()
             ->all();
 
@@ -519,9 +566,24 @@ class ContractController extends Controller
         ];
     }
 
+    private function safeColumnValues(string $table, string $column): array
+    {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column)) {
+            return [];
+        }
+
+        return DB::table($table)
+            ->whereNotNull($column)
+            ->where($column, '!=', '')
+            ->distinct()
+            ->orderBy($column)
+            ->pluck($column)
+            ->all();
+    }
+
     private function contractQueryConfigurationColumnsExist(): bool
     {
-        return Schema::hasColumns('contract_queries', [
+        return Schema::hasTable('contract_queries') && Schema::hasColumns('contract_queries', [
             'measurement_fields',
             'country_codes',
             'region_codes',
@@ -531,10 +593,13 @@ class ContractController extends Controller
             'latitude_max',
             'longitude_min',
             'longitude_max',
+            'measurement_date_from',
+            'measurement_date_to',
+            'temperature_min',
+            'temperature_max',
+            'contract_id',
         ]);
     }
-
-
 
     private function prepareContractQueries(iterable $queries, array $measurementFieldOptions): array
     {
@@ -569,6 +634,12 @@ class ContractController extends Controller
         }
         if (! empty($query->region_codes_list)) {
             $parts[] = "Regio's: " . implode(', ', $query->region_codes_list);
+        }
+        if (($query->measurement_date_from ?? null) !== null || ($query->measurement_date_to ?? null) !== null) {
+            $parts[] = 'Meetdatum: ' . (($query->measurement_date_from ?? null) ?? 'vrij') . ' t/m ' . (($query->measurement_date_to ?? null) ?? 'vrij');
+        }
+        if (($query->temperature_min ?? null) !== null || ($query->temperature_max ?? null) !== null) {
+            $parts[] = 'Temperatuur: ' . (($query->temperature_min ?? null) ?? 'vrij') . ' t/m ' . (($query->temperature_max ?? null) ?? 'vrij');
         }
         if (($query->elevation_min ?? null) !== null || ($query->elevation_max ?? null) !== null) {
             $parts[] = 'Elevation: ' . (($query->elevation_min ?? null) ?? 'vrij') . ' t/m ' . (($query->elevation_max ?? null) ?? 'vrij');
@@ -605,7 +676,7 @@ class ContractController extends Controller
         }
 
         $storedPermissions = DB::table('contract_role_permissions')
-            ->where('subscription_id', $contractId)
+            ->where('contract_id', $contractId)
             ->get()
             ->keyBy('role_label');
 
@@ -626,56 +697,53 @@ class ContractController extends Controller
     private function contractOverviewQuery()
     {
         $authorizedUsers = DB::table('contract_authorized_users')
-            ->select('subscription_id', DB::raw('COUNT(*) as authorized_user_count'))
-            ->groupBy('subscription_id');
+            ->select('contract_id', DB::raw('COUNT(*) as authorized_user_count'))
+            ->groupBy('contract_id');
 
         $contractQueries = DB::table('contract_queries')
-            ->select('subscription_id', DB::raw('COUNT(*) as query_count'))
-            ->groupBy('subscription_id');
+            ->select('contract_id', DB::raw('COUNT(*) as query_count'))
+            ->groupBy('contract_id');
 
-        $contractStations = DB::table('subscription_station')
-            ->select('subscription', DB::raw('COUNT(*) as station_count'))
-            ->groupBy('subscription');
-
-        $endpointActivity = DB::table('endpoint_activity')
-            ->select(
-                'identifier',
-                DB::raw('SUM(CASE WHEN authorized = 1 THEN 1 ELSE 0 END) as successful_calls')
-            )
-            ->groupBy('identifier');
-
-        return DB::table('subscriptions')
-            ->join('companies', 'subscriptions.company', '=', 'companies.id')
-            ->join('subscription_types', 'subscriptions.type', '=', 'subscription_types.id')
+        $query = DB::table('contracts')
+            ->join('companies', 'contracts.company_id', '=', 'companies.id')
+            ->leftJoin('contract_types', 'contracts.contract_type_id', '=', 'contract_types.id')
             ->leftJoinSub($authorizedUsers, 'authorized_users', function ($join) {
-                $join->on('subscriptions.id', '=', 'authorized_users.subscription_id');
+                $join->on('contracts.id', '=', 'authorized_users.contract_id');
             })
             ->leftJoinSub($contractQueries, 'contract_queries_summary', function ($join) {
-                $join->on('subscriptions.id', '=', 'contract_queries_summary.subscription_id');
-            })
-            ->leftJoinSub($contractStations, 'contract_stations', function ($join) {
-                $join->on('subscriptions.id', '=', 'contract_stations.subscription');
-            })
-            ->leftJoinSub($endpointActivity, 'endpoint_activity_summary', function ($join) {
-                $join->on('subscriptions.identifier', '=', 'endpoint_activity_summary.identifier');
-            })
+                $join->on('contracts.id', '=', 'contract_queries_summary.contract_id');
+            });
+
+        if (Schema::hasTable('contract_endpoint_activity')) {
+            $endpointActivity = DB::table('contract_endpoint_activity')
+                ->select('identifier', DB::raw('SUM(CASE WHEN authorized = 1 THEN 1 ELSE 0 END) as successful_calls'))
+                ->groupBy('identifier');
+
+            $query->leftJoinSub($endpointActivity, 'contract_activity_summary', function ($join) {
+                $join->on('contracts.identifier', '=', 'contract_activity_summary.identifier');
+            });
+        }
+
+        return $query
             ->select(
-                'subscriptions.id',
-                'subscriptions.identifier',
-                'subscriptions.start_date',
-                'subscriptions.end_date',
-                'subscriptions.price',
-                'subscriptions.notes',
-                'subscriptions.token',
+                'contracts.id',
+                'contracts.identifier',
+                'contracts.start_date',
+                'contracts.end_date',
+                'contracts.price',
+                'contracts.description',
+                'contracts.app_url',
+                'contracts.notes',
+                'contracts.status',
+                'contracts.api_token',
                 'companies.name as company_name',
-                'subscription_types.name as type_name',
+                DB::raw("COALESCE(contract_types.name, 'Onbekend type') as type_name"),
                 DB::raw('COALESCE(authorized_users.authorized_user_count, 0) as authorized_user_count'),
                 DB::raw('COALESCE(contract_queries_summary.query_count, 0) as query_count'),
-                DB::raw('COALESCE(contract_stations.station_count, 0) as station_count'),
-                DB::raw('COALESCE(endpoint_activity_summary.successful_calls, 0) as successful_calls')
+                DB::raw('COALESCE(contract_activity_summary.successful_calls, 0) as successful_calls')
             )
             ->orderBy('companies.name')
-            ->orderBy('subscriptions.identifier');
+            ->orderBy('contracts.identifier');
     }
 
     private function contractFormData(?object $contract = null): array
@@ -683,35 +751,53 @@ class ContractController extends Controller
         return [
             'contract' => $contract,
             'companies' => DB::table('companies')->orderBy('name')->get(),
-            'types' => DB::table('subscription_types')->orderBy('name')->get(),
+            'contractTypes' => DB::table('contract_types')->orderBy('name')->get(),
+            'availableStatuses' => ['Concept', 'Actief', 'Gepauzeerd', 'Beëindigd'],
+            'contractUserPermissionLevels' => self::CONTRACT_USER_PERMISSION_LEVELS,
         ];
     }
 
     private function validateContract(Request $request, ?int $ignoreId): array
     {
         return $request->validate([
-            'company' => ['required', 'integer', 'exists:companies,id'],
-            'type' => ['required', 'integer', 'exists:subscription_types,id'],
+            'company_id' => ['required', 'integer', 'exists:companies,id'],
+            'contract_type_id' => ['required', 'integer', 'exists:contract_types,id'],
             'start_date' => ['required', 'date'],
-            'end_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'price' => ['nullable', 'numeric'],
-            'notes' => ['nullable', 'string', 'max:256'],
-            'identifier' => ['required', 'string', 'max:45', 'unique:subscriptions,identifier,' . ($ignoreId ?? 'NULL') . ',id'],
-            'token' => ['nullable', 'string', 'max:100'],
+            'status' => ['required', 'string', 'max:50'],
+            'description' => ['required', 'string', 'max:255'],
+            'app_url' => ['required', 'url', 'max:255'],
+            'notes' => ['nullable', 'string'],
+            'identifier' => ['required', 'string', 'max:45', 'unique:contracts,identifier,' . ($ignoreId ?? 'NULL') . ',id'],
+            'api_token' => ['nullable', 'string', 'max:100'],
         ]);
     }
 
     private function findContract(string $identifier): ?object
     {
-        return DB::table('subscriptions')
-            ->join('companies', 'subscriptions.company', '=', 'companies.id')
-            ->join('subscription_types', 'subscriptions.type', '=', 'subscription_types.id')
-            ->where('subscriptions.identifier', $identifier)
+        return DB::table('contracts')
+            ->join('companies', 'contracts.company_id', '=', 'companies.id')
+            ->leftJoin('contract_types', 'contracts.contract_type_id', '=', 'contract_types.id')
+            ->where('contracts.identifier', $identifier)
             ->select(
-                'subscriptions.*',
+                'contracts.*',
                 'companies.name as company_name',
-                'subscription_types.name as type_name'
+                DB::raw("COALESCE(contract_types.name, 'Onbekend type') as type_name"),
+                'contract_types.slug as contract_type_slug',
+                'contract_types.description as contract_type_description'
             )
             ->first();
+    }
+
+    private function isContractActive(object $contract): bool
+    {
+        $today = now()->toDateString();
+
+        if (! empty($contract->end_date) && $contract->end_date < $today) {
+            return false;
+        }
+
+        return empty($contract->start_date) || $contract->start_date <= $today;
     }
 }
