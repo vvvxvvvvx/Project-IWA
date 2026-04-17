@@ -73,7 +73,7 @@
     <div class="panel-header panel-header-stack">
         <div>
             <h2>Contract-endpoints</h2>
-            <p class="muted">Voorbereid voor de contract-API laag: login, querydata, stations, stationdetail, users en logout.</p>
+            <p class="muted">Gebruik deze endpoints om login, querydata, stations, stationdetail, users en logout te testen. Het stations-endpoint gebruikt standaard de eerste actieve query van dit contract.</p>
         </div>
     </div>
     <div class="details-grid-2">
@@ -244,10 +244,12 @@
 
     <div class="table-wrapper" style="margin-top:18px;">
         <table class="data-table compact-table">
-            <thead><tr><th>Naam</th><th>Status</th><th>Meetvelden</th><th>Selectiecriteria</th><th>Endpoint</th><th>Acties</th></tr></thead>
+            <thead><tr><th>Query ID</th><th>Contract ID</th><th>Naam</th><th>Status</th><th>Meetvelden</th><th>Selectiecriteria</th><th>Endpoint</th><th>Acties</th></tr></thead>
             <tbody>
                 @forelse($queries as $query)
                 <tr>
+                    <td>{{ $query->id }}</td>
+                    <td>{{ $contract->id }}</td>
                     <td>{{ $query->name }}</td>
                     <td>{{ $query->status ?: '—' }}</td>
                     <td class="cell-break">{{ $query->measurement_field_labels ? implode(', ', $query->measurement_field_labels) : '—' }}</td>
@@ -268,7 +270,7 @@
                 </tr>
                 @if(auth()->user()?->hasTask('manage_contract_queries'))
                 <tr class="inline-manage-row-full">
-                    <td colspan="6">
+                    <td colspan="8">
                         <div class="inline-manage-panel inline-manage-panel-full-row">
                             <div class="inline-manage-body">
                                 <form method="POST" action="{{ route('contracts.queries.update', [$contract->identifier, $query->id]) }}" class="contract-query-builder contract-query-builder-grid">
@@ -326,6 +328,30 @@
                                     </div>
                                     <div class="contract-query-card contract-query-card-wide">
                                         <div class="inline-manage-field contract-query-field-full"><label>Notities</label><textarea name="notes">{{ $query->notes }}</textarea></div>
+                                    </div>
+                                    <div class="contract-query-card contract-query-card-wide">
+                                        <div class="contract-query-card-header"><h4>Resultaatstations onder deze query</h4><p class="muted">Preview van de weerstations die door de huidige querycriteria worden geselecteerd.</p></div>
+                                        <div class="table-wrapper">
+                                            <table class="data-table compact-table">
+                                                <thead><tr><th>Contract ID</th><th>Query ID</th><th>Weerstation</th><th>Landcode</th><th>Latitude</th><th>Longitude</th><th>Elevation</th><th>Regio</th></tr></thead>
+                                                <tbody>
+                                                    @forelse($query->preview_stations as $station)
+                                                    <tr>
+                                                        <td>{{ $contract->id }}</td>
+                                                        <td>{{ $query->id }}</td>
+                                                        <td>{{ $station->name }}</td>
+                                                        <td>{{ $station->country_code ?: '—' }}</td>
+                                                        <td>{{ $station->latitude ?? '—' }}</td>
+                                                        <td>{{ $station->longitude ?? '—' }}</td>
+                                                        <td>{{ $station->elevation ?? '—' }}</td>
+                                                        <td>{{ $station->administrative_region1 ?: '—' }}</td>
+                                                    </tr>
+                                                    @empty
+                                                    <tr><td colspan="8" class="muted">Er zijn geen weerstations gevonden voor deze query.</td></tr>
+                                                    @endforelse
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                     <div class="inline-manage-actions"><button class="primary-button compact-button" type="submit">Opslaan</button></div>
                                 </form>

@@ -26,6 +26,7 @@ Route::post('/IWA/contracten/login', [ContractAuthController::class, 'login']);
 
 Route::middleware(['auth.contract'])->group(function () {
     Route::post('/IWA/contract/logout', [ContractAuthController::class, 'logout']);
+    Route::get('/IWA/contracten/{identifier}/stations', [ContractDataController::class, 'defaultStations']);
     Route::get('/IWA/contracten/{identifier}/{queryID}', [ContractDataController::class, 'queryData'])->whereNumber('queryID');
     Route::get('/IWA/contracten/{identifier}/{queryID}/stations', [ContractDataController::class, 'stations'])->whereNumber('queryID');
     Route::get('/IWA/contracten/{identifier}/station/{name}', [ContractDataController::class, 'station']);

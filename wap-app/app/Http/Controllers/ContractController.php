@@ -135,7 +135,7 @@ class ContractController extends Controller
         $apiEndpoints = [
             'login' => url('/api/IWA/contracten/login'),
             'query_data' => url('/api/IWA/contracten/' . $contract->identifier . '/' . $queryIdPlaceholder),
-            'stations' => url('/api/IWA/contracten/' . $contract->identifier . '/' . $queryIdPlaceholder . '/stations'),
+            'stations' => url('/api/IWA/contracten/' . $contract->identifier . '/stations'),
             'station' => url('/api/IWA/contracten/' . $contract->identifier . '/station/{name}'),
             'users' => url('/api/IWA/contracten/' . $contract->identifier . '/users'),
             'logout' => url('/api/IWA/contract/logout'),
@@ -614,10 +614,56 @@ class ContractController extends Controller
                 $query->measurement_fields_list
             );
             $query->criteria_summary = $this->contractQueryCriteriaSummaryFromRecord($query);
+            $query->preview_stations = $this->previewStationsForContractQuery($query);
             $preparedQueries[] = $query;
         }
 
         return $preparedQueries;
+    }
+
+    private function previewStationsForContractQuery(object $query)
+    {
+        $stationQuery = DB::table('station')
+            ->leftJoin('geolocation', 'station.name', '=', 'geolocation.station_name')
+            ->leftJoin('nearestlocation', 'station.name', '=', 'nearestlocation.station_name');
+
+        if (! empty($query->country_codes_list)) {
+            $stationQuery->where(function ($subQuery) use ($query) {
+                $subQuery->whereIn('geolocation.country_code', $query->country_codes_list)
+                    ->orWhereIn('nearestlocation.country_code', $query->country_codes_list);
+            });
+        }
+
+        if (! empty($query->region_codes_list)) {
+            $stationQuery->whereIn('nearestlocation.administrative_region1', $query->region_codes_list);
+        }
+
+        foreach ([
+            ['elevation_min', 'station.elevation', '>='],
+            ['elevation_max', 'station.elevation', '<='],
+            ['latitude_min', 'station.latitude', '>='],
+            ['latitude_max', 'station.latitude', '<='],
+            ['longitude_min', 'station.longitude', '>='],
+            ['longitude_max', 'station.longitude', '<='],
+        ] as [$property, $column, $operator]) {
+            if (($query->{$property} ?? null) !== null) {
+                $stationQuery->where($column, $operator, $query->{$property});
+            }
+        }
+
+        return $stationQuery
+            ->select(
+                'station.name',
+                'station.latitude',
+                'station.longitude',
+                'station.elevation',
+                DB::raw('COALESCE(geolocation.country_code, nearestlocation.country_code) as country_code'),
+                'nearestlocation.administrative_region1'
+            )
+            ->orderBy('station.name')
+            ->distinct()
+            ->limit(100)
+            ->get();
     }
 
     private function csvToArray($value): array

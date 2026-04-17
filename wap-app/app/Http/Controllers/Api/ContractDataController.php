@@ -35,21 +35,61 @@ class ContractDataController extends Controller
             return response()->json(['error' => 'Query niet gevonden voor dit contract.'], 404);
         }
 
-        $stationNames = $this->filteredStationsQuery($contractQuery)
+        $stationRecords = $this->filteredStationsQuery($contractQuery)
+            ->select(
+                'station.name',
+                'station.latitude',
+                'station.longitude',
+                'station.elevation',
+                DB::raw('COALESCE(geolocation.country_code, nearestlocation.country_code) as country_code'),
+                DB::raw('COALESCE(geolocation.country, geolocation_country.country, nearestlocation_country.country) as country'),
+                'nearestlocation.administrative_region1'
+            )
             ->orderBy('station.name')
             ->distinct()
-            ->pluck('station.name');
+            ->get();
 
+        $stationNames = $stationRecords->pluck('name');
         $measurements = $this->measurementsForQuery($contractQuery, $stationNames)->get();
         $this->logActivity($identifier, '/IWA/contracten/' . $identifier . '/' . $queryID, $measurements->count());
 
         return response()->json([
-            'data' => $measurements,
+            'contract' => $this->contractContext($contract),
+            'query' => $this->queryContext($contractQuery),
+            'stations' => $stationRecords->map(fn ($station) => $this->stationContext($station, $contract, $contractQuery))->values(),
+            'data' => $measurements->map(function ($measurement) use ($contract, $contractQuery, $stationRecords) {
+                $station = $stationRecords->firstWhere('name', $measurement->station);
+
+                return array_merge((array) $measurement, [
+                    'contract_id' => $contract->id,
+                    'contract_identifier' => $contract->identifier,
+                    'query_id' => $contractQuery->id,
+                    'query_name' => $contractQuery->name,
+                    'station_name' => $measurement->station,
+                    'country_code' => $station->country_code ?? null,
+                    'country' => $station->country ?? null,
+                ]);
+            })->values(),
             'meta' => array_merge(
                 $this->queryMeta($contractQuery, $measurements->count()),
                 ['measurement_fields' => $this->measurementFieldsForQuery($contractQuery)]
             ),
         ]);
+    }
+
+    public function defaultStations(Request $request, string $identifier): JsonResponse
+    {
+        $contract = $this->findContract($identifier);
+        if (! $contract) {
+            return response()->json(['error' => 'Contract niet gevonden.'], 404);
+        }
+
+        $contractQuery = $this->defaultQuery($contract->id);
+        if (! $contractQuery) {
+            return response()->json(['error' => 'Er is nog geen actieve query voor dit contract.'], 404);
+        }
+
+        return $this->stations($request, $identifier, (int) $contractQuery->id);
     }
 
     public function stations(Request $request, string $identifier, int $queryID): JsonResponse
@@ -71,6 +111,7 @@ class ContractDataController extends Controller
                 'station.longitude',
                 'station.elevation',
                 DB::raw('COALESCE(geolocation.country_code, nearestlocation.country_code) as country_code'),
+                DB::raw('COALESCE(geolocation.country, geolocation_country.country, nearestlocation_country.country) as country'),
                 'nearestlocation.name as nearest_location',
                 'nearestlocation.administrative_region1'
             )
@@ -81,7 +122,9 @@ class ContractDataController extends Controller
         $this->logActivity($identifier, '/IWA/contracten/' . $identifier . '/' . $queryID . '/stations', $stations->count());
 
         return response()->json([
-            'data' => $stations,
+            'contract' => $this->contractContext($contract),
+            'query' => $this->queryContext($contractQuery),
+            'data' => $stations->map(fn ($station) => $this->stationContext($station, $contract, $contractQuery))->values(),
             'meta' => $this->queryMeta($contractQuery, $stations->count()),
         ]);
     }
@@ -104,7 +147,7 @@ class ContractDataController extends Controller
                 'station.longitude',
                 'station.elevation',
                 DB::raw('COALESCE(geolocation.country_code, nearestlocation.country_code) as country_code'),
-                'geolocation.country',
+                DB::raw('COALESCE(geolocation.country, geolocation_country.country, nearestlocation_country.country) as country'),
                 'geolocation.province',
                 'geolocation.city',
                 'nearestlocation.name as nearest_location',
@@ -121,7 +164,9 @@ class ContractDataController extends Controller
         $this->logActivity($identifier, '/IWA/contracten/' . $identifier . '/station/' . $name, 1);
 
         return response()->json([
-            'data' => $station,
+            'contract' => $this->contractContext($contract),
+            'query' => $contractQuery ? $this->queryContext($contractQuery) : null,
+            'data' => $this->stationContext($station, $contract, $contractQuery),
             'meta' => $this->queryMeta($contractQuery, 1),
         ]);
     }
@@ -154,7 +199,9 @@ class ContractDataController extends Controller
     {
         $stationQuery = DB::table('station')
             ->leftJoin('geolocation', 'station.name', '=', 'geolocation.station_name')
-            ->leftJoin('nearestlocation', 'station.name', '=', 'nearestlocation.station_name');
+            ->leftJoin('nearestlocation', 'station.name', '=', 'nearestlocation.station_name')
+            ->leftJoin('country as geolocation_country', 'geolocation.country_code', '=', 'geolocation_country.country_code')
+            ->leftJoin('country as nearestlocation_country', 'nearestlocation.country_code', '=', 'nearestlocation_country.country_code');
 
         if (! $contractQuery) {
             return $stationQuery;
@@ -251,6 +298,45 @@ class ContractDataController extends Controller
                 ],
             ] : null,
             'result_count' => $resultCount,
+        ];
+    }
+
+    private function contractContext(object $contract): array
+    {
+        return [
+            'id' => $contract->id,
+            'identifier' => $contract->identifier,
+        ];
+    }
+
+    private function queryContext(?object $contractQuery): ?array
+    {
+        if (! $contractQuery) {
+            return null;
+        }
+
+        return [
+            'id' => $contractQuery->id,
+            'name' => $contractQuery->name,
+            'status' => $contractQuery->status,
+        ];
+    }
+
+    private function stationContext(object $station, object $contract, ?object $contractQuery): array
+    {
+        return [
+            'contract_id' => $contract->id,
+            'contract_identifier' => $contract->identifier,
+            'query_id' => $contractQuery->id ?? null,
+            'query_name' => $contractQuery->name ?? null,
+            'station_name' => $station->name,
+            'country_code' => $station->country_code ?? null,
+            'country' => $station->country ?? null,
+            'nearest_location' => $station->nearest_location ?? null,
+            'administrative_region1' => $station->administrative_region1 ?? null,
+            'latitude' => $station->latitude ?? null,
+            'longitude' => $station->longitude ?? null,
+            'elevation' => $station->elevation ?? null,
         ];
     }
 
