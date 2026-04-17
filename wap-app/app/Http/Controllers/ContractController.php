@@ -38,11 +38,18 @@ class ContractController extends Controller
     {
         $contracts = $this->contractOverviewQuery()->get();
 
+        // Calculate summary statistics
         $summary = [
-            'contract_count' => $contracts->count(),
-            'active_count' => $contracts->filter(fn ($contract) => empty($contract->end_date) || $contract->end_date >= now()->toDateString())->count(),
-            'authorized_user_count' => $contracts->sum('authorized_user_count'),
-            'query_count' => $contracts->sum('query_count'),
+            'contract_count' => DB::table('subscriptions')->count(),
+            'active_count' => DB::table('subscriptions')
+                ->whereDate('start_date', '<=', now())
+                ->whereDate('end_date', '>=', now())
+                ->count(),
+            'authorized_user_count' => DB::table('endpoint_activity')
+                ->where('authorized', 1)
+                ->distinct('identifier')
+                ->count(),
+            'query_count' => DB::table('endpoint_activity')->count(),
         ];
 
         $recentContracts = $contracts->take(5);
@@ -107,6 +114,7 @@ class ContractController extends Controller
             ->limit(25)
             ->get();
 
+        return view('contracts.contract-details', compact('contract', 'activity'));
         $authorizedUsers = DB::table('contract_authorized_users')
             ->where('subscription_id', $contract->id)
             ->orderBy('name')
