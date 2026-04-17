@@ -211,6 +211,7 @@
                     <th>Luchtdruk (z.n.)</th>
                     <th>Zicht</th>
                     <th>Wind</th>
+                    <th>Windrichting</th>
                     <th>Neerslag</th>
                 </tr>
             </thead>
@@ -249,11 +250,26 @@
                         <td>{{ $readingArray['slp'] ?? '-' }}</td>
                         <td>{{ $readingArray['visib'] ?? '-' }}</td>
                         <td>{{ $readingArray['wdsp'] ?? '-' }}</td>
+                        <td>
+                            @php
+                                $deg = $readingArray['wnddir'] ?? null;
+                                if ($deg !== null && $deg !== '' && is_numeric($deg)) {
+                                    $deg = (float) $deg;
+                                    $dirs = ['N','NO','O','ZO','Z','ZW','W','NW'];
+                                    $label = $dirs[round($deg / 45) % 8];
+                                    $arrow = '<span style="display:inline-block;transform:rotate(' . $deg . 'deg);font-size:1.1em;">↑</span>';
+                                } else {
+                                    $label = '-';
+                                    $arrow = '';
+                                }
+                            @endphp
+                            {!! $arrow !!} {{ $label }}
+                        </td>
                         <td>{{ $readingArray['prcp'] ?? '-' }}</td>
                     </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="muted" style="text-align:center;">Geen metingen gevonden voor de geselecteerde periode.</td>
+                    <td colspan="9" class="muted" style="text-align:center;">Geen metingen gevonden voor de geselecteerde periode.</td>
                 </tr>
                 @endforelse
             </tbody>

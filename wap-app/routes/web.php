@@ -8,6 +8,8 @@ use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StationController;
+use App\Http\Controllers\StationCompareController;
+use App\Http\Controllers\ManageStationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WeatherDataController;
 use App\Http\Controllers\MeasurementController;
@@ -157,7 +159,16 @@ Route::middleware('auth')->group(function () {
 
     // Stationspagina's.
     Route::middleware('task:view_stations')->group(function () {
-        // All station routes are already defined earlier in this file
+        Route::get('/stations', [StationController::class, 'index'])->name('stations.index');
+        Route::get('/stations/compare', [StationCompareController::class, 'index'])->name('stations.compare');
+        Route::get('/stations/manage', [ManageStationController::class, 'index'])->name('stations.manage.index');
+        Route::get('/stations/manage/create', [ManageStationController::class, 'create'])->name('stations.manage.create');
+        Route::post('/stations/manage', [ManageStationController::class, 'store'])->name('stations.manage.store');
+        Route::get('/stations/manage/{stn}', [ManageStationController::class, 'show'])->name('stations.manage.show');
+        Route::get('/stations/manage/{stn}/edit', [ManageStationController::class, 'edit'])->name('stations.manage.edit');
+        Route::put('/stations/manage/{stn}', [ManageStationController::class, 'update'])->name('stations.manage.update');
+        Route::get('/stations/{stn}', [StationController::class, 'show'])->name('stations.show');
+        Route::get('/stations/{stn}/download', [StationController::class, 'download'])->name('stations.download');
     });
 
     // Contractpagina's.
