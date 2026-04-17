@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\StationFault;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -313,6 +314,32 @@ class StationController extends Controller
             default => $readingsToday,
         };
 
+        // Detecteer actieve storingen uit meetdata en maak automatisch records aan
+        $isOffline = !$latestDate || $latestDate < now()->subDay()->format('Y-m-d');
+
+        $detectedTypes = array_filter([
+            'offline'              => $isOffline,
+            'ontbrekende_data'     => $missingFieldsCount > 0,
+            'temperatuurcorrectie' => $temperatureCorrectionsCount > 0,
+        ]);
+
+        foreach (array_keys($detectedTypes) as $type) {
+            $openExists = StationFault::where('station', $stn)
+                ->where('type', $type)
+                ->whereIn('status', ['open', 'in_behandeling'])
+                ->exists();
+
+            if (!$openExists) {
+                StationFault::create(['station' => $stn, 'type' => $type, 'status' => 'open']);
+            }
+        }
+
+        $faults = StationFault::where('station', $stn)
+            ->withCount('notes')
+            ->orderByRaw("FIELD(status, 'open', 'in_behandeling', 'opgelost')")
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return view('stations.station-details', [
             'station' => $station,
             'readings' => $tableReadings,
@@ -324,6 +351,7 @@ class StationController extends Controller
             'missingFieldsPercentage' => $missingFieldsPercentage,
             'correctionPercentage' => $correctionPercentage,
             'qualityPercentage' => $qualityPercentage,
+            'faults' => $faults,
         ]);
     }
 

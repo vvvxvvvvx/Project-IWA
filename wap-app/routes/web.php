@@ -15,6 +15,7 @@ use App\Http\Controllers\WeatherDataController;
 use App\Http\Controllers\MeasurementController;
 use App\Http\Controllers\Auth\SuperUserViewController;
 use App\Http\Controllers\RoleTaskController;
+use App\Http\Controllers\StationFaultController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -172,6 +173,13 @@ Route::middleware('auth')->group(function () {
         Route::put('/stations/manage/{stn}', [ManageStationController::class, 'update'])->name('stations.manage.update');
         Route::get('/stations/{stn}', [StationController::class, 'show'])->name('stations.show');
         Route::get('/stations/{stn}/download', [StationController::class, 'download'])->name('stations.download');
+
+        // Storingen bij stations
+        Route::post('/storingen', [StationFaultController::class, 'store'])->name('storingen.store');
+        Route::get('/storingen/{id}', [StationFaultController::class, 'show'])->name('storingen.show');
+        Route::post('/storingen/{id}/status', [StationFaultController::class, 'updateStatus'])->name('storingen.status');
+        Route::post('/storingen/{id}/notes', [StationFaultController::class, 'storeNote'])->name('storingen.notes.store');
+        Route::delete('/storingen/{id}', [StationFaultController::class, 'destroy'])->name('storingen.destroy');
     });
 
     // Contractpagina's.
