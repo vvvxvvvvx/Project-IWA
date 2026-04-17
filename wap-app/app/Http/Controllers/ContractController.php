@@ -26,7 +26,9 @@ class ContractController extends Controller
                 'companies.name as company_name',
                 'subscription_types.name as type_name',
                 DB::raw('COUNT(DISTINCT subscription_station.station) as station_count'),
-                DB::raw('SUM(CASE WHEN endpoint_activity.authorized = 1 THEN 1 ELSE 0 END) as successful_calls')
+                DB::raw('SUM(CASE WHEN endpoint_activity.authorized = 1 THEN 1 ELSE 0 END) as successful_calls'),
+                DB::raw('COUNT(CASE WHEN endpoint_activity.authorized = 1 THEN 1 END) as authorized_user_count'),
+                DB::raw('COUNT(CASE WHEN endpoint_activity.id IS NOT NULL THEN 1 END) as query_count')
             )
             ->groupBy(
                 'subscriptions.identifier', 'subscriptions.start_date', 'subscriptions.end_date',
@@ -35,8 +37,22 @@ class ContractController extends Controller
             ->orderByDesc('subscriptions.start_date')
             ->get();
 
+        // Calculate summary statistics
+        $summary = [
+            'contract_count' => DB::table('subscriptions')->count(),
+            'active_count' => DB::table('subscriptions')
+                ->whereDate('start_date', '<=', now())
+                ->whereDate('end_date', '>=', now())
+                ->count(),
+            'authorized_user_count' => DB::table('endpoint_activity')
+                ->where('authorized', 1)
+                ->distinct('identifier')
+                ->count(),
+            'query_count' => DB::table('endpoint_activity')->count(),
+        ];
+
         // Contractoverzicht gebruikt een expliciete viewnaam zodat direct duidelijk is wat dit bestand toont.
-        return view('contracts.contract-list', compact('contracts'));
+        return view('contracts.contract-list', compact('contracts', 'summary'));
     }
 
     public function show(string $identifier): View
