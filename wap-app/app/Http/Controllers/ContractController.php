@@ -23,36 +23,20 @@ class ContractController extends Controller
                 'subscriptions.end_date',
                 'subscriptions.price',
                 'subscriptions.notes',
-                'subscriptions.token',
                 'companies.name as company_name',
                 'subscription_types.name as type_name',
                 DB::raw('COUNT(DISTINCT subscription_station.station) as station_count'),
-                DB::raw('SUM(CASE WHEN endpoint_activity.authorized = 1 THEN 1 ELSE 0 END) as successful_calls'),
-                DB::raw('(SELECT COUNT(*) FROM contract_authorized_users cau WHERE cau.subscription_id = subscriptions.id) as authorized_user_count'),
-                DB::raw('(SELECT COUNT(*) FROM contract_queries cq WHERE cq.subscription_id = subscriptions.id) as query_count')
+                DB::raw('SUM(CASE WHEN endpoint_activity.authorized = 1 THEN 1 ELSE 0 END) as successful_calls')
             )
             ->groupBy(
-                'subscriptions.id',
-                'subscriptions.identifier',
-                'subscriptions.start_date',
-                'subscriptions.end_date',
-                'subscriptions.price',
-                'subscriptions.notes',
-                'subscriptions.token',
-                'companies.name',
-                'subscription_types.name'
+                'subscriptions.identifier', 'subscriptions.start_date', 'subscriptions.end_date',
+                'subscriptions.price', 'subscriptions.notes', 'companies.name', 'subscription_types.name'
             )
             ->orderByDesc('subscriptions.start_date')
             ->get();
 
-        $summary = [
-            'contract_count' => $contracts->count(),
-            'active_count' => $contracts->filter(fn ($contract) => empty($contract->end_date) || $contract->end_date >= now()->toDateString())->count(),
-            'authorized_user_count' => $contracts->sum('authorized_user_count'),
-            'query_count' => $contracts->sum('query_count'),
-        ];
-
-        return view('contracts.contract-list', compact('contracts', 'summary'));
+        // Contractoverzicht gebruikt een expliciete viewnaam zodat direct duidelijk is wat dit bestand toont.
+        return view('contracts.contract-list', compact('contracts'));
     }
 
     public function show(string $identifier): View
@@ -80,6 +64,7 @@ class ContractController extends Controller
             ->limit(25)
             ->get();
 
+        return view('contracts.contract-details', compact('contract', 'activity'));
         $authorizedUsers = DB::table('contract_authorized_users')
             ->where('subscription_id', $contract->id)
             ->orderBy('name')
