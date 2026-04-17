@@ -31,7 +31,7 @@ class Station extends Model
 
     public function nearestlocation()
     {
-        return $this->hasOne(Nearestlocation::class, 'station_name', 'name');
+        return $this->hasOne(NearestLocation::class, 'station_name', 'name');
     }
 
     public function subscriptions()
