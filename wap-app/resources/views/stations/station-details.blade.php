@@ -284,6 +284,58 @@
     </form>
 </section>
 
+{{-- Storingen sectie --}}
+<article class="panel" style="margin-top:18px;">
+    <div class="panel-header">
+        <div>
+            <h2>Storingen</h2>
+            <p class="muted" style="margin-top:0.25rem;">Automatisch gedetecteerde storingen op basis van meetdata.</p>
+        </div>
+    </div>
+
+    @if($faults->isEmpty())
+        <p class="muted">Geen storingen gedetecteerd voor dit station.</p>
+    @else
+        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+            @foreach($faults as $fault)
+            <a href="{{ route('storingen.show', $fault->id) }}" style="text-decoration:none; color:inherit;">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1rem; border-radius:8px; background:#f8fafc; border:1px solid #e5e7eb; transition:background 0.15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                        @if($fault->status === 'open')
+                            <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0;"></span>
+                        @elseif($fault->status === 'in_behandeling')
+                            <span style="width:10px;height:10px;border-radius:50%;background:#3b82f6;display:inline-block;flex-shrink:0;"></span>
+                        @else
+                            <span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block;flex-shrink:0;"></span>
+                        @endif
+                        <div>
+                            <span style="font-weight:600;">{{ $fault->typeLabel() }}</span>
+                            @if($fault->description)
+                                <span class="muted" style="margin-left:0.5rem;">— {{ \Illuminate\Support\Str::limit($fault->description, 60) }}</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:1rem; flex-shrink:0;">
+                        @if($fault->status === 'open')
+                            <span class="status-badge warning">Open</span>
+                        @elseif($fault->status === 'in_behandeling')
+                            <span class="status-badge" style="background:rgba(59,130,246,.12);color:#1d4ed8;">In behandeling</span>
+                        @else
+                            <span class="status-badge success">Opgelost</span>
+                        @endif
+                        <span class="muted" style="font-size:0.8rem;">{{ $fault->created_at->format('d-m-Y') }}</span>
+                        @if($fault->notes_count > 0)
+                            <span class="muted" style="font-size:0.8rem;">💬 {{ $fault->notes_count }}</span>
+                        @endif
+                        <span style="color:#6b7280;">›</span>
+                    </div>
+                </div>
+            </a>
+            @endforeach
+        </div>
+    @endif
+</article>
+
 @endsection
 
 @push('scripts')
@@ -584,5 +636,6 @@ window.addEventListener('load', () => {
     setTimeout(initializePageWhenReady, 100);
 });
 </script>
+
 <script src="/assets/station.js"></script>
 @endpush
