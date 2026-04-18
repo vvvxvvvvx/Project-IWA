@@ -66,6 +66,7 @@
                     <th>Gem.</th>
                     <th>Zicht</th>
                     <th>Wind</th>
+                    <th>Windrichting</th>
                     <th>Neerslag</th>
                     <th>Metingen</th>
                     <th>Status</th>
@@ -82,6 +83,21 @@
                     <td>{{ $station->avg_temp ?? '-' }}</td>
                     <td>{{ $station->visib ?? '-' }}</td>
                     <td>{{ $station->wdsp ?? '-' }}</td>
+                    <td>
+                        @php
+                            $deg = $station->wnddir ?? null;
+                            if ($deg !== null && $deg !== '' && is_numeric($deg)) {
+                                $deg = (float) $deg;
+                                $dirs = ['N','NO','O','ZO','Z','ZW','W','NW'];
+                                $label = $dirs[round($deg / 45) % 8];
+                                $arrow = '<span style="display:inline-block;transform:rotate(' . $deg . 'deg);font-size:1.1em;">↑</span>';
+                            } else {
+                                $label = '-';
+                                $arrow = '';
+                            }
+                        @endphp
+                        {!! $arrow !!} {{ $label }}
+                    </td>
                     <td>{{ $station->prcp ?? '-' }}</td>
                     <td>{{ $station->reading_count ?? 0 }}</td>
                     <td>
@@ -94,7 +110,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="11" class="muted" style="text-align:center;">Geen stations gevonden voor deze filter.</td>
+                    <td colspan="12" class="muted" style="text-align:center;">Geen stations gevonden voor deze filter.</td>
                 </tr>
                 @endforelse
             </tbody>
