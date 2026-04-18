@@ -8,12 +8,15 @@ use App\Http\Controllers\ContractController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StationController;
+use App\Http\Controllers\StationCompareController;
+use App\Http\Controllers\ManageStationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WeatherDataController;
 use App\Http\Controllers\MeasurementController;
 use App\Http\Controllers\Auth\SuperUserViewController;
 use App\Http\Controllers\RoleTaskController;
 use App\Http\Controllers\EndpointController;
+use App\Http\Controllers\StationFaultController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,12 +32,120 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Generator endpoint (geen auth of CSRF vereist)
+Route::post('/postWeatherData', [MeasurementController::class, 'store']);
+
 // Authenticatie
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 Route::get('/', function () {
     return redirect()->route('login');
+});
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+    Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+    Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
+    Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::middleware('task:view_stations')->group(function () {
+        Route::get('/stations', [StationController::class, 'index'])->name('stations.index');
+        Route::get('/stations/storingen', [StationController::class, 'faults'])->name('stations.faults');
+        Route::get('/stations/storingen/offline', [StationController::class, 'faultsOffline'])->name('stations.faults.offline');
+        Route::get('/stations/storingen/ontbrekende-data', [StationController::class, 'faultsMissing'])->name('stations.faults.missing');
+        Route::get('/stations/storingen/temperatuurcorrecties', [StationController::class, 'faultsTemperature'])->name('stations.faults.temperature');
+        Route::get('/stations/{stn}', [StationController::class, 'show'])->name('stations.show');
+        Route::get('/stations/{stn}/download', [StationController::class, 'download'])->name('stations.download');
+    });
+
+    Route::middleware('task:view_companies')->group(function () {
+        Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
+        Route::get('/companies/create', [CompanyController::class, 'create'])->name('companies.create');
+        Route::post('/companies', [CompanyController::class, 'store'])->name('companies.store');
+        Route::get('/companies/{id}', [CompanyController::class, 'show'])->name('companies.show');
+        Route::get('/companies/{id}/edit', [CompanyController::class, 'edit'])->name('companies.edit');
+        Route::put('/companies/{id}', [CompanyController::class, 'update'])->name('companies.update');
+        Route::delete('/companies/{id}', [CompanyController::class, 'destroy'])->name('companies.destroy');
+
+        Route::get('/companies/{id}/contacts/create', [CompanyController::class, 'createContact'])->name('companies.contacts.create');
+        Route::post('/companies/{id}/contacts', [CompanyController::class, 'storeContact'])->name('companies.contacts.store');
+        Route::get('/companies/{companyId}/contacts/{contactId}/edit', [CompanyController::class, 'editContact'])->name('companies.contacts.edit');
+        Route::put('/companies/{companyId}/contacts/{contactId}', [CompanyController::class, 'updateContact'])->name('companies.contacts.update');
+        Route::delete('/companies/{companyId}/contacts/{contactId}', [CompanyController::class, 'destroyContact'])->name('companies.contacts.destroy');
+    });
+
+    Route::middleware('task:view_subscriptions')->group(function () {
+        Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+        Route::get('/subscriptions/create', [SubscriptionController::class, 'create'])->name('subscriptions.create');
+        Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
+        Route::get('/subscriptions/{identifier}', [SubscriptionController::class, 'show'])->name('subscriptions.show');
+        Route::get('/subscriptions/{identifier}/edit', [SubscriptionController::class, 'edit'])->name('subscriptions.edit');
+        Route::put('/subscriptions/{identifier}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
+        Route::delete('/subscriptions/{identifier}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
+        Route::post('/subscriptions/{identifier}/token', [SubscriptionController::class, 'regenerateToken'])->name('subscriptions.token.regenerate');
+        Route::post('/subscriptions/{identifier}/token-sent', [SubscriptionController::class, 'markTokenSent'])->name('subscriptions.token.sent');
+    });
+
+    Route::middleware('task:view_subscription_types')->group(function () {
+        Route::get('/subscription-types', [SubscriptionController::class, 'typesIndex'])->name('subscription-types.index');
+        Route::get('/subscription-types/create', [SubscriptionController::class, 'typesCreate'])->name('subscription-types.create');
+        Route::post('/subscription-types', [SubscriptionController::class, 'typesStore'])->name('subscription-types.store');
+        Route::get('/subscription-types/{id}/edit', [SubscriptionController::class, 'typesEdit'])->name('subscription-types.edit');
+        Route::put('/subscription-types/{id}', [SubscriptionController::class, 'typesUpdate'])->name('subscription-types.update');
+        Route::delete('/subscription-types/{id}', [SubscriptionController::class, 'typesDestroy'])->name('subscription-types.destroy');
+    });
+
+    Route::middleware('task:view_contracts')->group(function () {
+        Route::get('/contracts', [ContractController::class, 'index'])->name('contracts.index');
+        Route::get('/contracts/overview', [ContractController::class, 'overview'])->name('contracts.overview');
+        Route::get('/contracts/authorized-users', [ContractController::class, 'authorizedUsersIndex'])->name('contracts.authorized-users.index');
+        Route::get('/contracts/create', [ContractController::class, 'create'])->middleware('task:manage_contracts')->name('contracts.create');
+        Route::post('/contracts', [ContractController::class, 'store'])->middleware('task:manage_contracts')->name('contracts.store');
+        Route::get('/contracts/{identifier}', [ContractController::class, 'show'])->name('contracts.show');
+        Route::get('/contracts/{identifier}/edit', [ContractController::class, 'edit'])->middleware('task:manage_contracts')->name('contracts.edit');
+        Route::put('/contracts/{identifier}', [ContractController::class, 'update'])->middleware('task:manage_contracts')->name('contracts.update');
+        Route::delete('/contracts/{identifier}', [ContractController::class, 'destroy'])->middleware('task:manage_contracts')->name('contracts.destroy');
+        Route::post('/contracts/{identifier}/token', [ContractController::class, 'regenerateToken'])->middleware('task:manage_contracts')->name('contracts.token.regenerate');
+        Route::post('/contracts/{identifier}/token-sent', [ContractController::class, 'markTokenSent'])->middleware('task:manage_contracts')->name('contracts.token.sent');
+
+        Route::post('/contracts/{identifier}/authorized-users', [ContractController::class, 'storeAuthorizedUser'])->middleware('task:manage_contract_users')->name('contracts.authorized-users.store');
+        Route::put('/contracts/{identifier}/authorized-users/{userId}', [ContractController::class, 'updateAuthorizedUser'])->middleware('task:manage_contract_users')->name('contracts.authorized-users.update');
+        Route::delete('/contracts/{identifier}/authorized-users/{userId}', [ContractController::class, 'destroyAuthorizedUser'])->middleware('task:manage_contract_users')->name('contracts.authorized-users.destroy');
+        Route::put('/contracts/{identifier}/role-permissions', [ContractController::class, 'updateRolePermissions'])->middleware('task:manage_contract_users')->name('contracts.role-permissions.update');
+
+        Route::post('/contracts/{identifier}/queries', [ContractController::class, 'storeQuery'])->middleware('task:manage_contract_queries')->name('contracts.queries.store');
+        Route::put('/contracts/{identifier}/queries/{queryId}', [ContractController::class, 'updateQuery'])->middleware('task:manage_contract_queries')->name('contracts.queries.update');
+        Route::delete('/contracts/{identifier}/queries/{queryId}', [ContractController::class, 'destroyQuery'])->middleware('task:manage_contract_queries')->name('contracts.queries.destroy');
+    });
+
+    Route::middleware('task:manage_users')->group(function () {
+        Route::get('/super-users', [SuperUserViewController::class, 'index'])->name('super-users.index');
+        Route::post('/super-users/toevoegen', [SuperUserViewController::class, 'toevoegen'])->name('super-users.toevoegen');
+        Route::post('/super-users/{id}', [SuperUserViewController::class, 'verwijder'])->name('super-users.verwijder')->whereNumber('id');
+        Route::post('/super-users/{id}/bewerken', [SuperUserViewController::class, 'bewerkenVerify'])->name('super-users.bewerken')->whereNumber('id');
+    });
+
+    Route::middleware('task:manage_roles')->group(function () {
+        Route::get('/role-tasks', [RoleTaskController::class, 'index'])->name('role-tasks.index');
+        Route::post('/role-tasks', [RoleTaskController::class, 'store'])->name('role-tasks.store');
+        Route::put('/role-tasks/{id}', [RoleTaskController::class, 'update'])->name('role-tasks.update')->whereNumber('id');
+        Route::delete('/role-tasks/{id}', [RoleTaskController::class, 'destroy'])->name('role-tasks.destroy')->whereNumber('id');
+    });
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('account.profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('account.profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('account.profile.destroy');
+
+    Route::post('/weather-data', [WeatherDataController::class, 'store'])->name('weather-data.store');
+    Route::get('/measurements', [MeasurementController::class, 'index'])->name('measurements.index');
 });
 
 Route::middleware('guest')->group(function () {
@@ -54,8 +165,22 @@ Route::middleware('auth')->group(function () {
     // Stationspagina's.
     Route::middleware('task:view_stations')->group(function () {
         Route::get('/stations', [StationController::class, 'index'])->name('stations.index');
+        Route::get('/stations/compare', [StationCompareController::class, 'index'])->name('stations.compare');
+        Route::get('/stations/manage', [ManageStationController::class, 'index'])->name('stations.manage.index');
+        Route::get('/stations/manage/create', [ManageStationController::class, 'create'])->name('stations.manage.create');
+        Route::post('/stations/manage', [ManageStationController::class, 'store'])->name('stations.manage.store');
+        Route::get('/stations/manage/{stn}', [ManageStationController::class, 'show'])->name('stations.manage.show');
+        Route::get('/stations/manage/{stn}/edit', [ManageStationController::class, 'edit'])->name('stations.manage.edit');
+        Route::put('/stations/manage/{stn}', [ManageStationController::class, 'update'])->name('stations.manage.update');
         Route::get('/stations/{stn}', [StationController::class, 'show'])->name('stations.show');
         Route::get('/stations/{stn}/download', [StationController::class, 'download'])->name('stations.download');
+
+        // Storingen bij stations
+        Route::post('/storingen', [StationFaultController::class, 'store'])->name('storingen.store');
+        Route::get('/storingen/{id}', [StationFaultController::class, 'show'])->name('storingen.show');
+        Route::post('/storingen/{id}/status', [StationFaultController::class, 'updateStatus'])->name('storingen.status');
+        Route::post('/storingen/{id}/notes', [StationFaultController::class, 'storeNote'])->name('storingen.notes.store');
+        Route::delete('/storingen/{id}', [StationFaultController::class, 'destroy'])->name('storingen.destroy');
     });
 
     // Contractpagina's.

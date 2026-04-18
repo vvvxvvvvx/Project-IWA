@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\StationFault;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -71,6 +72,104 @@ class StationController extends Controller
             'selectedCountry' => $country,
             'selectedLocation' => $location,
         ]);
+    }
+
+    public function faults()
+    {
+        $stations = DB::table('station')
+            ->leftJoin('measurement as m', 'station.name', '=', 'm.station')
+            ->leftJoin('nearestlocation as nl', 'station.name', '=', 'nl.station_name')
+            ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
+            ->leftJoin('original_measurement as om', 'm.id', '=', 'om.corrected_measurement')
+            ->select(
+                'station.name as stn',
+                'nl.name as location_label',
+                'c.country as country_name',
+                DB::raw("MAX(CONCAT(m.date, ' ', m.time)) as measured_at"),
+                DB::raw('COUNT(m.id) as reading_count'),
+                DB::raw('MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) as has_missing_data'),
+                DB::raw('MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) as is_temp_peak'),
+                DB::raw("CASE WHEN MAX(m.date) >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END as is_online")
+            )
+            ->groupBy('station.name', 'nl.name', 'c.country')
+            ->havingRaw("
+                (CASE WHEN MAX(m.date) >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END) = 0
+                OR MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) = 1
+                OR MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) = 1
+            ")
+            ->orderBy('station.name')
+            ->get();
+
+        return view('stations.station-faults', [
+            'stations' => $stations,
+        ]);
+    }
+
+    public function faultsOffline()
+    {
+        $stations = DB::table('station')
+            ->leftJoin('measurement as m', 'station.name', '=', 'm.station')
+            ->leftJoin('nearestlocation as nl', 'station.name', '=', 'nl.station_name')
+            ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
+            ->select(
+                'station.name as stn',
+                'nl.name as location_label',
+                'c.country as country_name',
+                DB::raw("MAX(CONCAT(m.date, ' ', m.time)) as measured_at"),
+                DB::raw('COUNT(m.id) as reading_count')
+            )
+            ->groupBy('station.name', 'nl.name', 'c.country')
+            ->havingRaw("CASE WHEN MAX(m.date) >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END = 0")
+            ->orderBy('station.name')
+            ->get();
+
+        return view('stations.station-offline', ['stations' => $stations]);
+    }
+
+    public function faultsMissing()
+    {
+        $stations = DB::table('station')
+            ->leftJoin('measurement as m', 'station.name', '=', 'm.station')
+            ->leftJoin('nearestlocation as nl', 'station.name', '=', 'nl.station_name')
+            ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
+            ->leftJoin('original_measurement as om', 'm.id', '=', 'om.corrected_measurement')
+            ->select(
+                'station.name as stn',
+                'nl.name as location_label',
+                'c.country as country_name',
+                DB::raw("MAX(CONCAT(m.date, ' ', m.time)) as measured_at"),
+                DB::raw('COUNT(DISTINCT m.id) as reading_count'),
+                DB::raw('COUNT(DISTINCT CASE WHEN om.missing_field IS NOT NULL THEN om.id END) as missing_count')
+            )
+            ->groupBy('station.name', 'nl.name', 'c.country')
+            ->havingRaw("MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) = 1")
+            ->orderBy('station.name')
+            ->get();
+
+        return view('stations.station-missing', ['stations' => $stations]);
+    }
+
+    public function faultsTemperature()
+    {
+        $stations = DB::table('station')
+            ->leftJoin('measurement as m', 'station.name', '=', 'm.station')
+            ->leftJoin('nearestlocation as nl', 'station.name', '=', 'nl.station_name')
+            ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
+            ->leftJoin('original_measurement as om', 'm.id', '=', 'om.corrected_measurement')
+            ->select(
+                'station.name as stn',
+                'nl.name as location_label',
+                'c.country as country_name',
+                DB::raw("MAX(CONCAT(m.date, ' ', m.time)) as measured_at"),
+                DB::raw('COUNT(DISTINCT m.id) as reading_count'),
+                DB::raw('COUNT(DISTINCT CASE WHEN om.inavlid_temperature IS NOT NULL THEN om.id END) as correction_count')
+            )
+            ->groupBy('station.name', 'nl.name', 'c.country')
+            ->havingRaw("MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) = 1")
+            ->orderBy('station.name')
+            ->get();
+
+        return view('stations.station-temperature', ['stations' => $stations]);
     }
 
     public function show(string $stn)
@@ -215,6 +314,40 @@ class StationController extends Controller
             default => $readingsToday,
         };
 
+        // Detecteer actieve storingen uit meetdata en maak automatisch records aan
+        $isOffline = !$latestDate || $latestDate < now()->subDay()->format('Y-m-d');
+
+        $detectedTypes = array_filter([
+            'offline'              => $isOffline,
+            'ontbrekende_data'     => $missingFieldsCount > 0,
+            'temperatuurcorrectie' => $temperatureCorrectionsCount > 0,
+        ]);
+
+        foreach (array_keys($detectedTypes) as $type) {
+            // Alleen aanmaken als er vandaag nog geen storing van dit type bestaat
+            $alreadyExists = StationFault::where('station', $stn)
+                ->where('type', $type)
+                ->whereDate('created_at', today())
+                ->exists();
+
+            if (!$alreadyExists) {
+                StationFault::create(['station' => $stn, 'type' => $type, 'status' => 'open']);
+            }
+        }
+
+        $activeFaults = StationFault::where('station', $stn)
+            ->whereIn('status', ['open', 'in_behandeling'])
+            ->withCount('notes')
+            ->orderByRaw("FIELD(status, 'open', 'in_behandeling')")
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $resolvedFaults = StationFault::where('station', $stn)
+            ->where('status', 'opgelost')
+            ->withCount('notes')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
         return view('stations.station-details', [
             'station' => $station,
             'readings' => $tableReadings,
@@ -226,6 +359,8 @@ class StationController extends Controller
             'missingFieldsPercentage' => $missingFieldsPercentage,
             'correctionPercentage' => $correctionPercentage,
             'qualityPercentage' => $qualityPercentage,
+            'activeFaults' => $activeFaults,
+            'resolvedFaults' => $resolvedFaults,
         ]);
     }
 
