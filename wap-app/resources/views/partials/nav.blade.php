@@ -21,4 +21,5 @@
     @hastask('manage_roles')
         <a class="{{ request()->routeIs('role-tasks.*') ? 'active' : '' }}" href="{{ route('role-tasks.index') }}">Roltaken</a>
     @endhastask
+    <a class="{{ request()->routeIs('endpoints.*') ? 'active' : '' }}" href="{{ route('endpoints.index') }}">API Beheer</a>
 </nav>
