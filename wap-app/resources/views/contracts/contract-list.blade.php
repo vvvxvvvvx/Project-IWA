@@ -1,48 +1,83 @@
-{{-- Overzichtspagina voor contracten. Houd route('contracts.index') en ContractController@index in sync. --}}
 @extends('layouts.iwa')
 
 @section('title', 'Contracten')
-@section('eyebrow', 'Contracten via REST-API')
-@section('page-title', 'Contractoverzicht')
-@section('page-subtitle', 'Contractinformatie los getrokken van abonnementen, zodat contracten als eigen domein bekeken kunnen worden.')
+@section('eyebrow', 'Contractbeheer')
+@section('page-title', 'Contracten')
+@section('page-subtitle', 'Zelfstandig contractoverzicht. Deze pagina leest alleen uit de contractentabellen en toont geen abonnementen meer.')
 
 @section('back-button')
-    <a class="secondary-button" href="{{ route('subscriptions.index') }}">Terug naar abonnementen</a>
+    <div class="inline-form">
+        <a class="secondary-button compact-button" href="{{ route('contracts.overview') }}">Contractinzicht</a>
+        <a class="secondary-button compact-button" href="{{ route('contracts.authorized-users.index') }}">Geautoriseerde gebruikers</a>
+        @if(auth()->user()?->hasTask('manage_contracts'))
+            <a class="primary-button compact-button" href="{{ route('contracts.create') }}">Nieuw contract</a>
+        @endif
+    </div>
 @endsection
 
 @section('content')
-<article class="panel">
-    <div class="panel-header">
+<section class="panel contract-hero-panel">
+    <div class="panel-header panel-header-stack contract-hero-header">
+        <div>
+            <h2>Contractoverzicht</h2>
+            <p class="muted">Per contract zie je direct het bedrijf, de contractsoort, looptijd, status en de gekoppelde gebruikers en query’s.</p>
+        </div>
+    </div>
+</section>
+
+<article class="panel contract-table-panel">
+    <div class="panel-header panel-header-stack">
         <div>
             <h2>Alle contracten</h2>
-            <p class="muted">Contractgegevens relevant voor REST-API toegang: identifier, bronendpoint, geldigheid, prijs en recent API-gebruik.</p>
+            <p class="muted">De contractlaag is nu losgekoppeld van abonnementen. Alleen echte contractrecords worden hier getoond.</p>
         </div>
     </div>
     <div class="table-wrapper">
-        <table class="data-table">
+        <table class="data-table data-table-comfortable contract-table">
             <thead>
                 <tr>
                     <th>Contract</th>
                     <th>Bedrijf</th>
-                    <th>Type</th>
+                    <th>Soort</th>
+                    <th>Status</th>
                     <th>Looptijd</th>
                     <th>Prijs</th>
-                    <th>Stations</th>
-                    <th>Succesvolle API-calls</th>
+                    <th>Gebruikers</th>
+                    <th>Queries</th>
+                    <th>API-calls</th>
+                    <th>Acties</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($contracts as $contract)
+                @forelse ($contracts as $contract)
                 <tr>
-                    <td><a href="{{ route('contracts.show', $contract->identifier) }}">{{ $contract->identifier }}</a></td>
+                    <td>
+                        <a class="table-emphasis" href="{{ route('contracts.show', $contract->identifier) }}">{{ $contract->identifier }}</a>
+                        <div class="table-subtext">{{ $contract->notes ? \Illuminate\Support\Str::limit($contract->notes, 70) : 'Geen extra notities vastgelegd.' }}</div>
+                    </td>
                     <td>{{ $contract->company_name }}</td>
                     <td>{{ $contract->type_name }}</td>
-                    <td>{{ $contract->start_date }} &ndash; {{ $contract->end_date ?? 'Doorlopend' }}</td>
-                    <td>&euro; {{ number_format($contract->price, 2, ',', '.') }}</td>
-                    <td>{{ $contract->station_count }}</td>
+                    <td>{{ $contract->status ?: '—' }}</td>
+                    <td>
+                        <div>{{ $contract->start_date ? \Illuminate\Support\Carbon::parse($contract->start_date)->format('d-m-Y') : '—' }}</div>
+                        <div class="table-subtext">Tot {{ $contract->end_date ? \Illuminate\Support\Carbon::parse($contract->end_date)->format('d-m-Y') : 'Doorlopend' }}</div>
+                    </td>
+                    <td class="table-emphasis">€ {{ number_format((float) $contract->price, 2, ',', '.') }}</td>
+                    <td>{{ $contract->authorized_user_count }}</td>
+                    <td>{{ $contract->query_count }}</td>
                     <td>{{ $contract->successful_calls ?? 0 }}</td>
+                    <td>
+                        <div class="table-actions">
+                            <a class="secondary-button compact-button" href="{{ route('contracts.show', $contract->identifier) }}">Openen</a>
+                            @if(auth()->user()?->hasTask('manage_contracts'))
+                                <a class="secondary-button compact-button" href="{{ route('contracts.edit', $contract->identifier) }}">Wijzigen</a>
+                            @endif
+                        </div>
+                    </td>
                 </tr>
-                @endforeach
+                @empty
+                <tr><td colspan="10" class="muted">Er zijn nog geen contracten gevonden.</td></tr>
+                @endforelse
             </tbody>
         </table>
     </div>

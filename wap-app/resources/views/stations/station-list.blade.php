@@ -15,7 +15,9 @@
     <div class="panel-header">
         <div>
             <h2>Alle weerstations</h2>
-
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+            <a href="{{ route('stations.faults') }}" class="secondary-button">Actieve storingen</a>
         </div>
     </div>
 

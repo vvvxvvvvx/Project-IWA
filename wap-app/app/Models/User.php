@@ -28,7 +28,7 @@ class User extends Authenticatable
 
     public function userrole()
     {
-        return $this->belongsTo(Userrole::class, 'user_role', 'id');
+        return $this->belongsTo(UserRole::class, 'user_role', 'id');
     }
 
     public function hasTask(string $taskName): bool
