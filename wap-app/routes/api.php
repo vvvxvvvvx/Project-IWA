@@ -4,13 +4,27 @@ use App\Http\Controllers\Api\ContractAuthController;
 use App\Http\Controllers\Api\ContractDataController;
 use App\Http\Controllers\Api\ContractUserController;
 use App\Http\Controllers\Api\SubscriptionStationController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\StationController;
 use App\Http\Controllers\MeasurementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    // Haal de stations op die horen bij het contract/bedrijf van de ingelogde gebruiker
+    Route::get('/stations/my-stations', [StationController::class, 'myStations']);
+
+    // Haal details op van een specifiek station op id of naam
+    Route::get('/stations/{station}', [StationController::class, 'show']);
+});
 
 Route::post('/postWeatherData', [MeasurementController::class, 'store']);
 Route::post('/weather-stations/data', [MeasurementController::class, 'store']);

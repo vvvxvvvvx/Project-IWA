@@ -15,6 +15,7 @@ use App\Http\Controllers\WeatherDataController;
 use App\Http\Controllers\MeasurementController;
 use App\Http\Controllers\Auth\SuperUserViewController;
 use App\Http\Controllers\RoleTaskController;
+use App\Http\Controllers\EndpointController;
 use App\Http\Controllers\StationFaultController;
 use Illuminate\Support\Facades\Route;
 
@@ -214,6 +215,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/role-tasks/{id}', [RoleTaskController::class, 'update'])->name('role-tasks.update')->whereNumber('id');
         Route::delete('/role-tasks/{id}', [RoleTaskController::class, 'destroy'])->name('role-tasks.destroy')->whereNumber('id');
     });
+
+    // API monitoring (E-11)
+    Route::get('/endpoints', [EndpointController::class, 'index'])->name('endpoints.index');
 
     // Contactpersonen horen functioneel bij een bedrijf en schrijven naar relations.
     Route::middleware('task:view_companies')->group(function () {
