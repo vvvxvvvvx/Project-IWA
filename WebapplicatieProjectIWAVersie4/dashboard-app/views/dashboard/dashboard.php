@@ -92,7 +92,7 @@
 </section></section>
 <?php endif; ?>
 </main>
-<script>window.dashboardBootstrap = <?= json_encode(['chart_points'=>$chart_points,'top_stations'=>$top_stations,'overview'=>$overview,'latest_readings'=>$latest_readings,'stations'=>$stations,'latest_batches'=>$latest_batches,'flagged_readings'=>$flagged_readings,'recent_corrections'=>$recent_corrections ?? [],'recent_originals'=>$recent_originals ?? []], JSON_UNESCAPED_SLASHES) ?>;</script>
+<script>window.dashboardBootstrap = <?= json_encode(['chart_points'=>$chart_points ?? [],'top_stations'=>$top_stations,'overview'=>$overview,'latest_readings'=>$latest_readings,'stations'=>$stations,'latest_batches'=>$latest_batches ?? [],'flagged_readings'=>$flagged_readings,'recent_corrections'=>$recent_corrections ?? [],'recent_originals'=>$recent_originals ?? []], JSON_UNESCAPED_SLASHES) ?>;</script>
 <script src="/assets/app.js"></script>
 </body>
 </html>
