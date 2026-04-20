@@ -63,7 +63,7 @@ class StationController extends Controller
 
         $stations = $stationsQuery
             ->orderBy('nl.name')
-            ->get();
+            ->paginate(25);
 
         return view('stations.station-list', [
             'stations' => $stations,
