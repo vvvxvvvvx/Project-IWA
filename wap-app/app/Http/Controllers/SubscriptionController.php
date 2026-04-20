@@ -62,7 +62,7 @@ class SubscriptionController extends Controller
                 'subscription_types.frequency_in_hours', 'subscription_types.frequency_in_days'
             )
             ->orderBy('subscriptions.start_date', 'desc')
-            ->get();
+            ->paginate(15);
 
         $types = DB::table('subscription_types')
             ->select('subscription_types.*', DB::raw('(SELECT COUNT(*) FROM subscriptions WHERE subscriptions.type = subscription_types.id) as subscriber_count'))
@@ -71,11 +71,14 @@ class SubscriptionController extends Controller
         $today = now()->format('Y-m-d');
 
         $summary = [
-            'subscription_count'  => $subscriptions->count(),
-            'active_count'        => $subscriptions->filter(fn($s) => empty($s->end_date) || $s->end_date >= $today)->count(),
+            'subscription_count'  => DB::table('subscriptions')->count(),
+            'active_count'        => DB::table('subscriptions')
+                ->where(function ($q) use ($today) {
+                    $q->whereNull('end_date')->orWhere('end_date', '>=', $today);
+                })->count(),
             'type_count'          => $types->count(),
             'total_station_links' => DB::table('subscription_station')->count(),
-            'total_revenue'       => $subscriptions->sum('price'),
+            'total_revenue'       => DB::table('subscriptions')->sum('price'),
         ];
 
         // Let op: deze lijstview gebruikt een expliciete naam zodat index/detail/types niet vaag blijven.

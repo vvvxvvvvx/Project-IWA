@@ -32,7 +32,7 @@ class CompanyController extends Controller
             ->leftJoin('country', 'companies.country', '=', 'country.country_code')
             ->select('companies.*', 'country.country as country_name')
             ->orderBy('companies.name')
-            ->get();
+            ->paginate(20);
 
         // Let op: deze view heet bewust company-list.blade.php voor duidelijkere naamgeving.
         return view('companies.company-list', compact('companies'));

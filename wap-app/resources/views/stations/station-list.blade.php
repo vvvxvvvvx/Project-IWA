@@ -118,5 +118,6 @@
             </tbody>
         </table>
     </div>
+    {{ $stations->appends(request()->query())->links() }}
 </article>
 @endsection
