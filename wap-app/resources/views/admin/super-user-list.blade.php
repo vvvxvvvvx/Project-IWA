@@ -6,20 +6,15 @@
 @section('page-title', 'Superusers Overzicht')
 @section('page-subtitle', 'Overzicht van alle users in het systeem.')
 
-@section('back-button')
-    <a class="secondary-button" href="{{ route('dashboard') }}">Terug naar dashboard</a>
-@endsection
 
 @section('content')
 <article class="panel">
-    <div class="panel-header">
+    <div class="panel-header panel-header-stack">
         <div>
-            <h2>Alle users</h2>
-            <p class="muted">Overzicht van alle users met hun rollen.</p>
-            <p class='button-wrapper'>
-                <button type="button" class="primary-button" onclick="openModal('toevoegen-modal')">User toevoegen</button>
-            </p>
+            <h2>Alle gebruikers</h2>
+            <p class="muted">Overzicht van alle gebruikers met hun rollen.</p>
         </div>
+        <button type="button" class="secondary-button compact-button" onclick="openModal('toevoegen-modal')">Gebruiker toevoegen</button>
     </div>
 
     @if(session('error'))
@@ -43,31 +38,39 @@
                     <th>E-mail</th>
                     <th>Rol</th>
                     <th>Acties</th>
-                    <th> </th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($users as $user)
+                @forelse ($users as $user)
                 <tr>
                     <td>{{ $user->id }}</td>
-                    <td>{{ $user->first_name  }}</td>
+                    <td>{{ $user->first_name }}</td>
                     <td>{{ $user->name }}</td>
                     <td>{{ $user->email }}</td>
                     <td>{{ $user->role }}</td>
                     <td>
-                        <button type="button" class="primary-button"
-                            onclick="openModal('verwijder-modal-{{ $user->id }}')">
-                            Verwijderen
-                        </button>
-                    </td>
-                    <td>
-                        <button type="button" class="primary-button"
-                            onclick="openModal('bewerken-modal-{{ $user->id }}')">
-                            Bewerken
-                        </button>
+                        <div class="table-actions">
+                            <button type="button" class="secondary-button compact-button"
+                                onclick="openModal('bewerken-modal-{{ $user->id }}')">
+                                Bewerken
+                            </button>
+                            <button type="button" class="danger-button compact-button"
+                                onclick="openModal('verwijder-modal-{{ $user->id }}')">
+                                Verwijderen
+                            </button>
+                        </div>
                     </td>
                 </tr>
-                @endforeach
+                @empty
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <span class="muted">Nog geen gebruikers gevonden.</span>
+                            <button type="button" class="secondary-button compact-button" onclick="openModal('toevoegen-modal')">Voeg eerste gebruiker toe</button>
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>

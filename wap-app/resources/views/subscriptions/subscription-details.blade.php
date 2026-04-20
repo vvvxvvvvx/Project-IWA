@@ -17,6 +17,7 @@
     <a class="secondary-button" href="{{ route('subscriptions.index') }}">Terug naar abonnementen</a>
 @endsection
 
+
 @section('content')
 <section class="panel">
     <div class="panel-header panel-header-stack">
@@ -25,10 +26,10 @@
             <p class="muted">Gebruik deze pagina voor beheer van token, type en gekoppelde contractinformatie.</p>
         </div>
         <div class="inline-form">
-            <a class="secondary-button" href="{{ route('subscriptions.edit', $subscription->identifier) }}">Abonnement wijzigen</a>
+            <a class="secondary-button compact-button" href="{{ route('subscriptions.edit', $subscription->identifier) }}">Abonnement bewerken</a>
             <form method="POST" action="{{ route('subscriptions.destroy', $subscription->identifier) }}" onsubmit="return confirm('Abonnement verwijderen?');">
                 @csrf @method('DELETE')
-                <button class="secondary-button" type="submit">Verwijderen</button>
+                <button class="danger-button compact-button" type="submit">Verwijderen</button>
             </form>
         </div>
     </div>
