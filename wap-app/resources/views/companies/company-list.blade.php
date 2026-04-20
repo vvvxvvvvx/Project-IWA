@@ -55,5 +55,6 @@
             </tbody>
         </table>
     </div>
+    {{ $companies->links() }}
 </article>
 @endsection

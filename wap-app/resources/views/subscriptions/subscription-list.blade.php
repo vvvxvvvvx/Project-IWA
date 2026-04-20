@@ -57,6 +57,7 @@
             </tbody>
         </table>
     </div>
+    {{ $subscriptions->links() }}
 </article>
 
 <article class="panel" style="margin-top:18px;">

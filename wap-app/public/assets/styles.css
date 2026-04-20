@@ -362,3 +362,18 @@ body {
 .inline-manage-panel-full-row .inline-manage-body {
     margin-top: 0;
 }
+
+.pagination-nav {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(20,33,61,.08);
+}
+
+.pagination-disabled {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+}
