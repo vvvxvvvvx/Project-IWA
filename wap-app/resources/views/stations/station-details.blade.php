@@ -15,6 +15,7 @@
     <a class="secondary-button" href="{{ route('stations.index') }}">Terug naar stations</a>
 @endsection
 
+
 @section('content')
 
 <style>
@@ -149,7 +150,7 @@
     <div class="metric-box" style="border-left-color: #4CAF50;">
         <h3>Datakwaliteit</h3>
         <div class="metric-value" style="color: #4CAF50;">{{ $qualityPercentage }}%</div>
-        <div class="metric-label">Metingen vandaag: {{ $totalReadings }}</div>
+        <div class="metric-label">Ontvangen metingen: {{ $totalReadings }}</div>
     </div>
 
     <div class="metric-box" style="border-left-color: #FF9800;">
@@ -196,7 +197,7 @@
             <button type="submit" class="primary-button" style="padding: 8px 16px;">Filter toepassen</button>
         </div>
         <div>
-            <a href="{{ route('stations.show', $station->stn) }}" class="secondary-button" style="padding: 8px 16px;">Reset</a>
+            <a href="{{ route('stations.show', $station->stn) }}" class="secondary-button" style="padding: 8px 16px;">Resetten</a>
         </div>
     </form>
 

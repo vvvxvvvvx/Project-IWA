@@ -21,7 +21,7 @@
         </div>
     </div>
     <div class="header-actions">
-        <div class="live-pill" id="liveIndicator">Live</div>
+        <div class="live-pill" id="liveIndicator">Actief</div>
         <form method="POST" action="{{ route('logout') }}">
             @csrf
             <button class="secondary-button" type="submit">Uitloggen</button>

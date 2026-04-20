@@ -10,10 +10,11 @@
         <a class="secondary-button compact-button" href="{{ route('contracts.overview') }}">Contractinzicht</a>
         <a class="secondary-button compact-button" href="{{ route('contracts.authorized-users.index') }}">Geautoriseerde gebruikers</a>
         @if(auth()->user()?->hasTask('manage_contracts'))
-            <a class="primary-button compact-button" href="{{ route('contracts.create') }}">Nieuw contract</a>
+            <a class="secondary-button compact-button" href="{{ route('contracts.create') }}">Nieuw contract</a>
         @endif
     </div>
 @endsection
+
 
 @section('content')
 <section class="panel contract-hero-panel">
@@ -70,13 +71,22 @@
                         <div class="table-actions">
                             <a class="secondary-button compact-button" href="{{ route('contracts.show', $contract->identifier) }}">Openen</a>
                             @if(auth()->user()?->hasTask('manage_contracts'))
-                                <a class="secondary-button compact-button" href="{{ route('contracts.edit', $contract->identifier) }}">Wijzigen</a>
+                                <a class="secondary-button compact-button" href="{{ route('contracts.edit', $contract->identifier) }}">Bewerken</a>
                             @endif
                         </div>
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="10" class="muted">Er zijn nog geen contracten gevonden.</td></tr>
+                <tr>
+                    <td colspan="10">
+                        <div class="empty-state">
+                            <span class="muted">Er zijn nog geen contracten gevonden.</span>
+                            @if(auth()->user()?->hasTask('manage_contracts'))
+                                <a class="secondary-button compact-button" href="{{ route('contracts.create') }}">Maak je eerste contract</a>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
                 @endforelse
             </tbody>
         </table>
