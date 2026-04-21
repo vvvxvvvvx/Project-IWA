@@ -403,17 +403,30 @@ class StationController extends Controller
         // Detecteer actieve storingen uit meetdata en maak automatisch records aan
         $isOffline = !$latestDate || $latestDate < now()->subDay()->format('Y-m-d');
 
+        // Check over alle metingen (niet alleen de laatste dag) zodat dit consistent is met de overzichtspagina
+        $hasMissingDataEver = DB::table('original_measurement as om')
+            ->join('measurement as m', 'm.id', '=', 'om.corrected_measurement')
+            ->where('m.station', $stn)
+            ->whereNotNull('om.missing_field')
+            ->exists();
+
+        $hasTemperatureCorrectionsEver = DB::table('original_measurement as om')
+            ->join('measurement as m', 'm.id', '=', 'om.corrected_measurement')
+            ->where('m.station', $stn)
+            ->whereNotNull('om.inavlid_temperature')
+            ->exists();
+
         $detectedTypes = array_filter([
             'offline'              => $isOffline,
-            'ontbrekende_data'     => $missingFieldsCount > 0,
-            'temperatuurcorrectie' => $temperatureCorrectionsCount > 0,
+            'ontbrekende_data'     => $hasMissingDataEver,
+            'temperatuurcorrectie' => $hasTemperatureCorrectionsEver,
         ]);
 
         foreach (array_keys($detectedTypes) as $type) {
-            // Alleen aanmaken als er nog geen open/in behandeling storing van dit type bestaat
+            // Alleen aanmaken als er nog nooit een storing van dit type is geweest (ook niet opgelost),
+            // zodat handmatig opgeloste storingen niet automatisch opnieuw worden aangemaakt.
             $alreadyExists = StationFault::where('station', $stn)
                 ->where('type', $type)
-                ->whereIn('status', ['open', 'in_behandeling'])
                 ->exists();
 
             if (!$alreadyExists) {
