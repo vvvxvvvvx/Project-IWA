@@ -398,8 +398,8 @@ body {
 .danger-button:hover { background: #b91c1c; color: #fff; }
 
 /* === STATUS BADGE FIXES === */
-.status-badge.negative { background: rgba(220,38,38,.1); color: #dc2626; }
-.status-badge.danger   { background: rgba(220,38,38,.1); color: #dc2626; }
+.status-badge.negative,
+.status-badge.danger { background: rgba(220,38,38,.1); color: #dc2626; }
 
 /* === NUMERIC TABLE ALIGNMENT === */
 .td-numeric { text-align: right; font-variant-numeric: tabular-nums; }
