@@ -11,7 +11,6 @@
 @section('title', $company->name)
 @section('eyebrow', 'Bedrijf detail')
 @section('page-title', $company->name)
-@section('page-subtitle', 'Bedrijfsgegevens, contactpersonen en gekoppelde abonnementen.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('companies.index') }}">Terug naar bedrijven</a>

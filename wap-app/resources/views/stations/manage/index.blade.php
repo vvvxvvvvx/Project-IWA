@@ -4,7 +4,6 @@
 @section('title', 'Stations beheren')
 @section('eyebrow', 'Stationsbeheer')
 @section('page-title', 'Stations beheren')
-@section('page-subtitle', 'Aanmaken, bekijken en wijzigen van weerstations.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('stations.index') }}">Terug naar overzicht</a>

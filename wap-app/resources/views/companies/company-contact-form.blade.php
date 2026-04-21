@@ -11,7 +11,6 @@
 @section('title', $contact ? 'Contactpersoon wijzigen' : 'Contactpersoon toevoegen')
 @section('eyebrow', 'Klantenbeheer')
 @section('page-title', $contact ? 'Contactpersoon wijzigen' : 'Contactpersoon toevoegen')
-@section('page-subtitle', 'Contactgegevens voor ' . $company->name)
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('companies.edit', $company->id) }}">Terug naar bedrijf bewerken</a>

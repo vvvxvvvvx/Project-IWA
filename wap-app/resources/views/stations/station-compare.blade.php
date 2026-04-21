@@ -4,7 +4,6 @@
 @section('title', 'Stations vergelijken')
 @section('eyebrow', 'Analyse & monitoring')
 @section('page-title', 'Stations vergelijken')
-@section('page-subtitle', 'Bekijk één meetgegeven van meerdere stations tegelijk naast elkaar.')
 
 @push('head-scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -68,34 +67,65 @@
     </div>
 
     <form method="GET" action="{{ route('stations.compare') }}" class="compare-form">
-        <div class="form-row">
+        <div class="form-row" style="align-items: flex-start;">
             <div>
                 <label for="stations">Stations <span style="font-weight:400;">(meerdere selecteren met Ctrl/Cmd)</span></label>
                 <select name="stations[]" id="stations" multiple class="form-control">
                     @foreach ($allStations as $s)
                         <option value="{{ $s->stn }}"
+                            data-country="{{ $s->country_code }}"
                             {{ in_array($s->stn, $selectedStns) ? 'selected' : '' }}>
                             {{ $s->location_label ?? $s->stn }} ({{ $s->stn }})
                         </option>
                     @endforeach
                 </select>
-                <p class="hint">Houd Ctrl (Windows) of Cmd (Mac) ingedrukt om meerdere stations te selecteren.</p>
             </div>
 
-            <div>
-                <label for="metric">Meetgegeven</label>
-                <select name="metric" id="metric" class="form-control" style="min-width: 200px;">
-                    @foreach ($metrics as $key => $meta)
-                        <option value="{{ $key }}" {{ $selectedMetric === $key ? 'selected' : '' }}>
-                            {{ $meta['label'] }} ({{ $meta['unit'] }})
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            <div style="display:flex; flex-direction:column; gap:1rem;">
+                <div>
+                    <label for="country-filter">Filter op land</label>
+                    <select name="country_filter" id="country-filter" class="form-control" style="min-width: 200px;">
+                        <option value="">Alle landen</option>
+                        @foreach ($countries as $c)
+                            <option value="{{ $c->country_code }}" {{ $selectedCountry === $c->country_code ? 'selected' : '' }}>
+                                {{ $c->country_name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <div style="display:flex; gap:0.5rem; align-items:flex-end;">
-                <button type="submit" class="primary-button">Vergelijken</button>
-                <a href="{{ route('stations.compare') }}" class="secondary-button">Resetten</a>
+                <div>
+                    <label for="metric">Meetgegeven</label>
+                    <select name="metric" id="metric" class="form-control" style="min-width: 200px;">
+                        @foreach ($metrics as $key => $meta)
+                            <option value="{{ $key }}" {{ $selectedMetric === $key ? 'selected' : '' }}>
+                                {{ $meta['label'] }} ({{ $meta['unit'] }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label for="period">Periode</label>
+                    <select name="period" id="period" class="form-control" style="min-width: 200px;" onchange="toggleDatePicker(this.value)">
+                        <option value="day"      {{ $selectedPeriod === 'day'      ? 'selected' : '' }}>Vandaag</option>
+                        <option value="specific" {{ $selectedPeriod === 'specific' ? 'selected' : '' }}>Specifieke dag</option>
+                        <option value="week"     {{ $selectedPeriod === 'week'     ? 'selected' : '' }}>Afgelopen 7 dagen (gemiddeld)</option>
+                        <option value="month"    {{ $selectedPeriod === 'month'    ? 'selected' : '' }}>Afgelopen 30 dagen (gemiddeld)</option>
+                    </select>
+                </div>
+
+                <div id="date-picker-wrapper" style="display: {{ $selectedPeriod === 'specific' ? 'block' : 'none' }};">
+                    <label for="date">Kies een datum</label>
+                    <input type="date" name="date" id="date" value="{{ $selectedDate }}"
+                        max="{{ now()->format('Y-m-d') }}"
+                        class="form-control" style="min-width: 200px;">
+                </div>
+
+                <div style="display:flex; gap:0.5rem;">
+                    <button type="submit" class="primary-button">Vergelijken</button>
+                    <a href="{{ route('stations.compare') }}" class="secondary-button">Resetten</a>
+                </div>
             </div>
         </div>
     </form>
@@ -108,7 +138,13 @@
     <div class="panel-header">
         <div>
             <h2>{{ $metrics[$selectedMetric]['label'] }} — vergelijking</h2>
-            <p class="muted">Metingen van de meest recente beschikbare dag per station.</p>
+            <p class="muted">
+                @if($selectedPeriod === 'day') Uurdata voor vandaag ({{ now()->format('d-m-Y') }}).
+                @elseif($selectedPeriod === 'specific') Uurdata voor {{ \Carbon\Carbon::parse($selectedDate)->format('d-m-Y') }}.
+                @elseif($selectedPeriod === 'week') Daggemiddelden — afgelopen 7 dagen.
+                @elseif($selectedPeriod === 'month') Daggemiddelden — afgelopen 30 dagen.
+                @endif
+            </p>
         </div>
     </div>
     <div class="chart-container">
@@ -116,66 +152,6 @@
     </div>
 </section>
 
-{{-- Vergelijkingstabel --}}
-<section class="panel">
-    <div class="panel-header">
-        <div>
-            <h2>Laatste meting per station</h2>
-            <p class="muted">Meest recente opgeslagen waarden voor alle geselecteerde stations.</p>
-        </div>
-    </div>
-    <div class="table-wrapper">
-        <table class="data-table compare-table">
-            <thead>
-                <tr>
-                    <th>Station</th>
-                    <th>Locatie</th>
-                    <th>Moment</th>
-                    <th>Temp (°C)</th>
-                    <th>Dauwpunt (°C)</th>
-                    <th>Luchtdruk st. (hPa)</th>
-                    <th>Luchtdruk z.n. (hPa)</th>
-                    <th>Zicht</th>
-                    <th>Wind (m/s)</th>
-                    <th>Windrichting</th>
-                    <th>Neerslag (mm)</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($tableRows as $row)
-                <tr>
-                    <td>
-                        <span class="color-dot" style="background:{{ $row['color'] }};"></span>
-                        <a href="{{ route('stations.show', $row['stn']) }}">{{ $row['stn'] }}</a>
-                    </td>
-                    <td>{{ $row['label'] }}</td>
-                    <td>{{ $row['latest']?->measured_at ?? '-' }}</td>
-                    <td>{{ $row['latest']?->temperature ?? '-' }}</td>
-                    <td>{{ $row['latest']?->dewpoint_temperature ?? '-' }}</td>
-                    <td>{{ $row['latest']?->air_pressure_station ?? '-' }}</td>
-                    <td>{{ $row['latest']?->air_pressure_sea_level ?? '-' }}</td>
-                    <td>{{ $row['latest']?->visibility ?? '-' }}</td>
-                    <td>{{ $row['latest']?->wind_speed ?? '-' }}</td>
-                    <td>
-                        @php
-                            $deg = $row['latest']?->wind_direction ?? null;
-                            if ($deg !== null && is_numeric($deg)) {
-                                $deg = (float) $deg;
-                                $dirs = ['N','NO','O','ZO','Z','ZW','W','NW'];
-                                $label = $dirs[round($deg / 45) % 8];
-                                echo '<span style="display:inline-block;transform:rotate(' . $deg . 'deg);font-size:1.1em;">↑</span> ' . $label;
-                            } else {
-                                echo '-';
-                            }
-                        @endphp
-                    </td>
-                    <td>{{ $row['latest']?->percipation ?? '-' }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-</section>
 
 @elseif (count($selectedStns) > 0)
 <div class="panel" style="padding: 2rem; text-align:center; color: var(--text-muted);">
@@ -190,6 +166,42 @@
 @endsection
 
 @push('scripts')
+{{-- Filter logica --}}
+<script>
+function toggleDatePicker(value) {
+    document.getElementById('date-picker-wrapper').style.display = value === 'specific' ? 'block' : 'none';
+}
+
+function applyCountryFilter(selectedCountry) {
+    const stationsSelect = document.getElementById('stations');
+    const options = stationsSelect.querySelectorAll('option');
+
+    options.forEach(function (option) {
+        const countryCode = option.getAttribute('data-country');
+        const isSelected  = option.selected;
+
+        // Geselecteerde stations altijd zichtbaar houden
+        if (!selectedCountry || countryCode === selectedCountry || isSelected) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
+    });
+}
+
+document.getElementById('country-filter').addEventListener('change', function () {
+    applyCountryFilter(this.value);
+});
+
+// Filter direct toepassen bij het laden van de pagina
+document.addEventListener('DOMContentLoaded', function () {
+    const countryFilter = document.getElementById('country-filter');
+    if (countryFilter.value) {
+        applyCountryFilter(countryFilter.value);
+    }
+});
+</script>
+
 @if (count($chartDatasets) > 0)
 <script>
 const sharedLabels = {!! json_encode($sharedLabels) !!};
@@ -255,3 +267,4 @@ new Chart(ctx, {
 </script>
 @endif
 @endpush
+                                                                                                                    

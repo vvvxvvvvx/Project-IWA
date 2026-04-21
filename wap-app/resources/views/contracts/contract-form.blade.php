@@ -3,7 +3,6 @@
 @section('title', $contract ? 'Contract wijzigen' : 'Contract toevoegen')
 @section('eyebrow', 'Contractbeheer')
 @section('page-title', $contract ? 'Contract wijzigen' : 'Contract toevoegen')
-@section('page-subtitle', 'Zelfstandige contractlaag voor periode 3, los van abonnementen, met twee vaste contractsoorten en een verplichte admin-gebruiker bij nieuwe contracten.')
 
 @section('back-button')
     <a class="secondary-button compact-button" href="{{ $contract ? route('contracts.show', $contract->identifier) : route('contracts.index') }}">Terug</a>
@@ -96,7 +95,6 @@
             <div class="panel-header panel-header-stack">
                 <div>
                     <h2>Eerste admin gebruiker</h2>
-                    <p class="muted">Voor periode 3 moet een nieuw contract direct minimaal één admin user krijgen voor app-login en beheer-endpoints.</p>
                 </div>
             </div>
             <div class="form-grid contract-form-grid">

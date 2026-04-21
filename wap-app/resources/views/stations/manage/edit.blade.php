@@ -4,7 +4,6 @@
 @section('title', 'Station ' . $station->stn . ' wijzigen')
 @section('eyebrow', 'Stationsbeheer')
 @section('page-title', 'Station wijzigen')
-@section('page-subtitle', 'STN ' . $station->stn . ' — pas de gegevens aan en sla op.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('stations.manage.show', $station->stn) }}">Terug naar station</a>

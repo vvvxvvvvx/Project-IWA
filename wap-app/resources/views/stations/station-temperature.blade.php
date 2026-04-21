@@ -4,7 +4,6 @@
 @section('title', 'Temperatuurcorrecties')
 @section('eyebrow', 'Analyse & monitoring')
 @section('page-title', 'Temperatuurcorrecties')
-@section('page-subtitle', 'Stations waarbij ongeldige temperatuurwaarden zijn gedetecteerd en gecorrigeerd.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('stations.faults') }}">Terug naar storingen</a>

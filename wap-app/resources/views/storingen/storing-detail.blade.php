@@ -4,7 +4,6 @@
 @section('title', 'Storing #' . $fault->id)
 @section('eyebrow', 'Analyse & monitoring')
 @section('page-title', $fault->typeLabel() . ' — Storing #' . $fault->id)
-@section('page-subtitle', ($station->location_label ?? 'Onbekend') . ' · ' . ($station->country_name ?? '') . ' · STN ' . $fault->station)
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('stations.show', $fault->station) }}">Terug naar station</a>

@@ -10,7 +10,6 @@
 @section('title', 'Welkom')
 @section('eyebrow', 'IWA platform')
 @section('page-title', 'Internationale Weer Agentschap')
-@section('page-subtitle', 'Gebruik het dashboard om stations, contracten, abonnementen en bedrijven te beheren.')
 
 @section('content')
 <article class="panel">

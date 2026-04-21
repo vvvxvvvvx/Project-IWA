@@ -4,7 +4,6 @@
 @section('title', 'Offline stations')
 @section('eyebrow', 'Analyse & monitoring')
 @section('page-title', 'Offline stations')
-@section('page-subtitle', 'Stations die de afgelopen 24 uur geen meting hebben doorgestuurd.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('stations.faults') }}">Terug naar storingen</a>

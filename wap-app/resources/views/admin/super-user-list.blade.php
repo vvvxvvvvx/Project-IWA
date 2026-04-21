@@ -4,7 +4,6 @@
 @section('title', 'Superusers')
 @section('eyebrow', 'Gebruikersbeheer')
 @section('page-title', 'Superusers Overzicht')
-@section('page-subtitle', 'Overzicht van alle users in het systeem.')
 
 
 @section('content')
@@ -12,7 +11,6 @@
     <div class="panel-header panel-header-stack">
         <div>
             <h2>Alle gebruikers</h2>
-            <p class="muted">Overzicht van alle gebruikers met hun rollen.</p>
         </div>
         <button type="button" class="secondary-button compact-button" onclick="openModal('toevoegen-modal')">Gebruiker toevoegen</button>
     </div>

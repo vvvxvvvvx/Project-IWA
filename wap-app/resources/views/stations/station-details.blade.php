@@ -4,7 +4,6 @@
 @section('title', $station->stn)
 @section('eyebrow', 'Station detail')
 @section('page-title', $station->stn)
-@section('page-subtitle', ($station->location_label ?? 'Onbekend') . ' · ' . ($station->country_name ?? 'Onbekend') . ' · STN ' . $station->stn)
 
 @push('head-scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,6 +12,7 @@
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('stations.index') }}">Terug naar stations</a>
+    <a class="secondary-button" href="{{ route('stations.compare', ['stations[]' => $station->stn]) }}">⇄ Vergelijk station</a>
 @endsection
 
 
@@ -100,7 +100,6 @@
         <div class="panel-header">
             <div>
                 <h2>Temperatuurtrend</h2>
-                <p class="muted">Metingen van vandaag met trends en afwijkingen.</p>
             </div>
         </div>
         <div style="position: relative;">
@@ -133,7 +132,6 @@
         <div class="panel-header">
             <div>
                 <h2>Locatie</h2>
-                <p class="muted">Geografische positie van het station.</p>
             </div>
         </div>
         <div id="stationMap"></div>
@@ -171,7 +169,6 @@
     <div class="panel-header">
         <div>
             <h2>Gedetailleerde Metingen</h2>
-            <p class="muted">Alle metingen met filteropties per periode.</p>
         </div>
     </div>
 
@@ -277,10 +274,17 @@
         </table>
     </div>
 
+    {{-- Paginator --}}
+    <div style="margin-top: 15px;">
+        {{ $readings->links() }}
+    </div>
+
     {{-- CSV Download --}}
     <form method="GET" action="{{ route('stations.download', $station->stn) }}" style="margin-top: 15px;">
-        <input type="hidden" name="from" value="{{ request('from', now()->format('Y-m-d')) }}">
-        <input type="hidden" name="to" value="{{ request('to', now()->format('Y-m-d')) }}">
+        @if(request('period') === 'custom' && request('from'))
+            <input type="hidden" name="from" value="{{ request('from') }}">
+            <input type="hidden" name="to" value="{{ request('to') }}">
+        @endif
         <button type="submit" class="secondary-button" style="padding: 8px 16px;">📥 Download als CSV</button>
     </form>
 </section>
@@ -290,8 +294,6 @@
     <div class="panel-header">
         <div>
             <h2>Actieve storingen</h2>
-            <p class="muted" style="margin-top:0.25rem;">Automatisch gedetecteerde storingen op basis van meetdata.</p>
-        </div>
     </div>
 
     @if($activeFaults->isEmpty())

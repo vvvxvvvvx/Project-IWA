@@ -11,7 +11,6 @@
 @section('title', $subscription->identifier)
 @section('eyebrow', 'Abonnement detail')
 @section('page-title', $subscription->identifier)
-@section('page-subtitle', 'Detailinformatie over looptijd, gekoppelde stations en endpointactiviteit.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('subscriptions.index') }}">Terug naar abonnementen</a>
@@ -23,7 +22,6 @@
     <div class="panel-header panel-header-stack">
         <div>
             <h2>Abonnement</h2>
-            <p class="muted">Gebruik deze pagina voor beheer van token, type en gekoppelde contractinformatie.</p>
         </div>
         <div class="inline-form">
             <a class="secondary-button compact-button" href="{{ route('subscriptions.edit', $subscription->identifier) }}">Abonnement bewerken</a>

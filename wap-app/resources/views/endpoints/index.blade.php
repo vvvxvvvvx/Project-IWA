@@ -3,7 +3,6 @@
 @section('title', 'REST-API Monitoring')
 @section('eyebrow', 'Technisch beheer API')
 @section('page-title', 'API Overzicht')
-@section('page-subtitle', 'Volledig inzicht in het verbruik en de toegang tot de REST-API (E-11).')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('dashboard') }}">Naar Dashboard</a>
@@ -27,7 +26,6 @@
     <div class="panel-header">
         <div>
             <h2>Verbruik per Endpoint</h2>
-            <p class="muted">Overzicht van welke delen van de API het meest intensief worden aangesproken.</p>
         </div>
     </div>
     <div class="table-wrapper">
@@ -61,7 +59,7 @@
     <div class="panel-header">
         <div>
             <h2>Recente 100 API Aanvragen (Logs)</h2>
-            <p class="muted">Live inzage in het verloop van inkomend verkeer. Rode regels vereisen mogelijk aandacht.</p>
+            <p class="muted">Rode regels vereisen mogelijk aandacht.</p>
         </div>
     </div>
     <div class="table-wrapper">

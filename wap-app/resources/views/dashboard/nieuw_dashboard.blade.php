@@ -86,6 +86,18 @@
                 </span>
             </div>
         </div>
+
+        @php $storingen = (int)($overview['active_storingen'] ?? 0); @endphp
+        <a href="{{ route('stations.faults') }}" class="metric-card" style="text-decoration:none; color:inherit; cursor:pointer; transition: box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.10)'" onmouseout="this.style.boxShadow=''">
+            <div class="metric-icon">⚠</div>
+            <div>
+                <span class="metric-label">Actieve storingen</span>
+                <strong class="metric-value">{{ $storingen }}</strong>
+                <span class="metric-change {{ $storingen === 0 ? 'positive' : ($storingen <= 5 ? 'warning' : 'negative') }}">
+                    {{ $storingen === 0 ? 'Geen storingen' : ($storingen === 1 ? '1 storing open' : $storingen . ' storingen open') }}
+                </span>
+            </div>
+        </a>
         @endif
 
     </section>
@@ -100,7 +112,7 @@
                 <div class="panel-header">
                     <div>
                         <h2>Stations per land</h2>
-                        <p class="muted">Klik op een pin om het aantal stations in dit land te zien.</p>
+                        <p class="muted">Klik op een pin om naar de stations van dat land te gaan.</p>
                     </div>
                 </div>
                 <div id="stationsMap" style="width: 100%; height: 400px; border-radius: 8px;"></div>
@@ -163,7 +175,7 @@
                     <tbody>
                         @forelse ($stations_most_missing as $station)
                         <tr>
-                            <td><strong>{{ $station->location_label }}</strong></td>
+                            <td><a href="{{ route('stations.show', $station->stn) }}" style="font-weight:600; color:#2563eb; text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ $station->location_label }}</a></td>
                             <td>{{ $station->country_name }}</td>
                             <td><span class="status-badge warning">{{ number_format($station->missing_count) }}</span></td>
                             <td>{{ number_format($station->reading_count) }}</td>
@@ -238,17 +250,23 @@ function initMap() {
         });
         markersAdded++;
         
+        const countryCode = country.country_code;
+        const stationsUrl = `/stations?country=${encodeURIComponent(countryCode)}`;
+
         const infoWindow = new google.maps.InfoWindow({
-            content: `<div style="padding: 8px; font-family: Arial;">
-                <strong>${countryName}</strong><br>
-                <span>${stationCount} station(s)</span>
+            content: `<div style="padding: 8px; font-family: Arial; min-width: 160px;">
+                <strong style="font-size: 1rem;">${countryName}</strong><br>
+                <span style="color: #555;">${stationCount} station(s)</span><br><br>
+                <a href="${stationsUrl}" style="display:inline-block; background:#2563eb; color:#fff; padding:5px 12px; border-radius:5px; text-decoration:none; font-size:0.85rem; font-weight:600;">
+                    Bekijk stations &rarr;
+                </a>
             </div>`
         });
-        
+
         marker.addListener('click', () => {
             infoWindows.forEach(iw => iw.close());
-            infoWindow.open(map, marker);
             infoWindows.length = 0;
+            infoWindow.open(map, marker);
             infoWindows.push(infoWindow);
         });
     });

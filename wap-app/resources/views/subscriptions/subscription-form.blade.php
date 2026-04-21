@@ -13,7 +13,6 @@
 @section('title', $subscription ? 'Abonnement wijzigen' : 'Abonnement toevoegen')
 @section('eyebrow', 'Abonnementenbeheer')
 @section('page-title', $subscription ? 'Abonnement wijzigen' : 'Abonnement toevoegen')
-@section('page-subtitle', 'Beheer van klant, type, looptijd en token in één formulier.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ $subscription ? route('subscriptions.show', $subscription->identifier) : route('subscriptions.index') }}">Terug</a>
@@ -24,10 +23,6 @@
     <div class="panel-header">
         <div>
             <h2>{{ $subscription ? 'Abonnement bewerken' : 'Nieuw abonnement' }}</h2>
-            <p class="muted">
-                Dit formulier schrijft direct naar de tabel <code>subscriptions</code>.
-                Bij een bestaand abonnement kun je hieronder ook een nieuw token genereren of als verstuurd markeren.
-            </p>
         </div>
     </div>
 
@@ -82,10 +77,6 @@
         <div class="panel-header panel-header-stack">
             <div>
                 <h2>Tokenbeheer</h2>
-                <p class="muted">
-                    Gebruik deze acties als het abonnement nieuwe toegangsgegevens nodig heeft.
-                    Beide knoppen schrijven direct weg naar de database.
-                </p>
             </div>
             <div class="inline-form">
                 <form method="POST" action="{{ route('subscriptions.token.regenerate', $subscription->identifier) }}">

@@ -25,7 +25,7 @@
         <div>
             <p class="eyebrow">@yield('eyebrow', 'Internationale Weer Agentschap')</p>
             <h1>@yield('page-title')</h1>
-            <p class="header-subtitle">@yield('page-subtitle')</p>
+            @hasSection('page-subtitle')<p class="header-subtitle">@yield('page-subtitle')</p>@endif
         </div>
     </div>
     <div class="header-actions">

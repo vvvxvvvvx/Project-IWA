@@ -3,7 +3,6 @@
 @section('title', 'Contractinzicht')
 @section('eyebrow', 'Contractbeheer')
 @section('page-title', 'Contractinzicht')
-@section('page-subtitle', 'Samengevat overzicht van de zelfstandige contractlaag, inclusief gebruikers en queryinrichting.')
 
 @section('back-button')
     <div class="inline-form">

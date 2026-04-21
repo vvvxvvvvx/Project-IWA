@@ -4,7 +4,6 @@
 @section('title', 'Actieve storingen')
 @section('eyebrow', 'Analyse & monitoring')
 @section('page-title', 'Actieve storingen')
-@section('page-subtitle', 'Overzicht van alle stations met een actieve storing: offline, ontbrekende data of temperatuurcorrecties.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('stations.index') }}">Terug naar stations</a>
@@ -16,7 +15,7 @@
         <div>
             <h2>Stations met actieve storingen</h2>
             <p class="muted" style="margin-top:0.25rem;">
-                {{ $stations->count() }} {{ $stations->count() === 1 ? 'station' : 'stations' }} gevonden
+                Stations met actieve storingen
             </p>
         </div>
         <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
@@ -78,6 +77,9 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+    <div style="margin-top: 15px;">
+        {{ $stations->links() }}
     </div>
 </article>
 @endsection

@@ -4,7 +4,6 @@
 @section('title', 'Stations')
 @section('eyebrow', 'Analyse & monitoring')
 @section('page-title', 'Stationsoverzicht')
-@section('page-subtitle', 'Duidelijke lijst van alle weerstations met locatie, laatste meting en status.')
 
 
 @section('content')
@@ -14,6 +13,7 @@
             <h2>Alle weerstations</h2>
         </div>
         <div style="display:flex; gap:0.5rem;">
+            <a href="{{ route('stations.compare') }}" class="secondary-button">⇄ Stations vergelijken</a>
             <a href="{{ route('stations.faults') }}" class="secondary-button">Actieve storingen</a>
         </div>
     </div>

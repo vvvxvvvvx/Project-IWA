@@ -9,7 +9,6 @@
 @section('title', $type ? 'Abonnementtype wijzigen' : 'Abonnementtype toevoegen')
 @section('eyebrow', 'Abonnementenaanbod')
 @section('page-title', $type ? 'Abonnementtype wijzigen' : 'Abonnementtype toevoegen')
-@section('page-subtitle', 'Beheer van naam, frequentie en prijs per station.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('subscription-types.index') }}">Terug naar types</a>

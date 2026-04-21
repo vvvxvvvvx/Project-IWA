@@ -4,7 +4,6 @@
 @section('title', 'Station ' . $station->stn)
 @section('eyebrow', 'Stationsbeheer')
 @section('page-title', $station->stn)
-@section('page-subtitle', ($station->location_label ?? 'Onbekend') . ' · ' . ($station->country_name ?? '') . ' · STN ' . $station->stn)
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('stations.manage.index') }}">Terug naar beheer</a>

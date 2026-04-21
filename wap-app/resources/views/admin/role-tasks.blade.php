@@ -4,7 +4,6 @@
 @section('title', 'Roltaken')
 @section('eyebrow', 'Rollenbeheer')
 @section('page-title', 'Roltaken Overzicht')
-@section('page-subtitle', 'Beheer de taken die bij elke rol horen.')
 
 
 @section('content')

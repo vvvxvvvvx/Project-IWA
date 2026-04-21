@@ -28,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
 
         Paginator::defaultView('vendor.pagination.iwa');
+        Paginator::defaultSimpleView('vendor.pagination.iwa-simple');
 
         Blade::if('hastask', function (string $taskName) {
             return auth()->check() && auth()->user()->hasTask($taskName);

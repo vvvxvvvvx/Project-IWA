@@ -3,7 +3,6 @@
 @section('title', 'Geautoriseerde gebruikers')
 @section('eyebrow', 'Gebruikersbeheer')
 @section('page-title', 'Gebruikersoverzicht per contract')
-@section('page-subtitle', 'Centraal overzicht van alle vastgelegde contractgebruikers binnen de nieuwe contractlaag.')
 
 @section('back-button')
     <div class="inline-form">
@@ -23,7 +22,6 @@
     <div class="panel-header">
         <div>
             <h2>Overzicht</h2>
-            <p class="muted">Gebruik dit overzicht om per contract snel te zien wie toegang heeft en welke rol of status is vastgelegd.</p>
         </div>
     </div>
     <div class="table-wrapper">

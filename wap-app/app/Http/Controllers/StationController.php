@@ -63,7 +63,7 @@ class StationController extends Controller
 
         $stations = $stationsQuery
             ->orderBy('nl.name')
-            ->paginate(25);
+            ->paginate(10);
 
         return view('stations.station-list', [
             'stations' => $stations,
@@ -76,29 +76,51 @@ class StationController extends Controller
 
     public function faults()
     {
-        $stations = DB::table('station')
-            ->leftJoin('measurement as m', 'station.name', '=', 'm.station')
-            ->leftJoin('nearestlocation as nl', 'station.name', '=', 'nl.station_name')
-            ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
-            ->leftJoin('original_measurement as om', 'm.id', '=', 'om.corrected_measurement')
+        // Stap 1: aggregeer measurement-data per station (één keer, efficiënt)
+        $measurementStats = DB::table('measurement')
             ->select(
-                'station.name as stn',
+                'station',
+                DB::raw("MAX(CONCAT(date, ' ', time)) as measured_at"),
+                DB::raw('COUNT(*) as reading_count'),
+                DB::raw('MAX(date) as latest_date')
+            )
+            ->groupBy('station');
+
+        // Stap 2: aggregeer storingsvlaggen per station vanuit original_measurement
+        $faultStats = DB::table('original_measurement as om')
+            ->join('measurement as m', 'm.id', '=', 'om.corrected_measurement')
+            ->select(
+                'm.station',
+                DB::raw('MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) as has_missing_data'),
+                DB::raw('MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) as is_temp_peak')
+            )
+            ->groupBy('m.station');
+
+        // Stap 3: join de kleine subqueries aan station — geen grote kruistabel meer
+        $stations = DB::table('station as s')
+            ->leftJoin('nearestlocation as nl', 's.name', '=', 'nl.station_name')
+            ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
+            ->leftJoinSub($measurementStats, 'ms', 'ms.station', '=', 's.name')
+            ->leftJoinSub($faultStats, 'fs', 'fs.station', '=', 's.name')
+            ->select(
+                's.name as stn',
                 'nl.name as location_label',
                 'c.country as country_name',
-                DB::raw("MAX(CONCAT(m.date, ' ', m.time)) as measured_at"),
-                DB::raw('COUNT(m.id) as reading_count'),
-                DB::raw('MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) as has_missing_data'),
-                DB::raw('MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) as is_temp_peak'),
-                DB::raw("CASE WHEN MAX(m.date) >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END as is_online")
+                'ms.measured_at',
+                'ms.reading_count',
+                DB::raw('COALESCE(fs.has_missing_data, 0) as has_missing_data'),
+                DB::raw('COALESCE(fs.is_temp_peak, 0) as is_temp_peak'),
+                DB::raw("CASE WHEN ms.latest_date >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END as is_online")
             )
-            ->groupBy('station.name', 'nl.name', 'c.country')
-            ->havingRaw("
-                (CASE WHEN MAX(m.date) >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END) = 0
-                OR MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) = 1
-                OR MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) = 1
-            ")
-            ->orderBy('station.name')
-            ->get();
+            ->where(function ($q) {
+                $q->whereRaw('ms.latest_date < DATE_SUB(CURDATE(), INTERVAL 1 DAY)')
+                  ->orWhereNull('ms.latest_date')
+                  ->orWhereRaw('COALESCE(fs.has_missing_data, 0) = 1')
+                  ->orWhereRaw('COALESCE(fs.is_temp_peak, 0) = 1');
+            })
+            ->orderBy('s.name')
+            ->simplePaginate(10)
+            ->withQueryString();
 
         return view('stations.station-faults', [
             'stations' => $stations,
@@ -307,11 +329,75 @@ class StationController extends Controller
 
         // Bepaal welke metingen voor de tabel moeten worden gebruikt op basis van periode parameter
         $period = request('period', 'day');
+
+        // Gepagineerde queries voor de detailtabel (25 rijen per pagina)
+        $readingsTodayPaginated = DB::table('measurement as m')
+            ->leftJoin('original_measurement as om', 'm.id', '=', 'om.corrected_measurement')
+            ->where('m.station', $stn)
+            ->where('m.date', $today)
+            ->select(
+                'm.id',
+                DB::raw("CONCAT(m.date, ' ', m.time) as measured_at"),
+                'm.temperature as temp',
+                'm.dewpoint_temperature as dewp',
+                'm.air_pressure_station as stp',
+                'm.air_pressure_sea_level as slp',
+                'm.visibility as visib',
+                'm.wind_speed as wdsp',
+                'm.wind_direction as wnddir',
+                'm.percipation as prcp',
+                'om.inavlid_temperature as orig_temp',
+                'om.missing_field as is_missing'
+            )
+            ->orderBy('m.date')
+            ->orderBy('m.time')
+            ->paginate(10)
+            ->withQueryString();
+
+        $readingsWeekPaginated = DB::table('measurement')
+            ->where('station', $stn)
+            ->where('date', '>=', $lastWeek)
+            ->select(
+                'date',
+                DB::raw("SUBSTRING(time, 1, 2) as hour"),
+                DB::raw('AVG(temperature) as temp'),
+                DB::raw('AVG(dewpoint_temperature) as dewp'),
+                DB::raw('AVG(air_pressure_station) as stp'),
+                DB::raw('AVG(air_pressure_sea_level) as slp'),
+                DB::raw('AVG(visibility) as visib'),
+                DB::raw('AVG(wind_speed) as wdsp'),
+                DB::raw('AVG(percipation) as prcp')
+            )
+            ->groupBy('date', DB::raw("SUBSTRING(time, 1, 2)"))
+            ->orderBy('date')
+            ->orderBy(DB::raw("SUBSTRING(time, 1, 2)"))
+            ->paginate(10)
+            ->withQueryString();
+
+        $readingsMonthPaginated = DB::table('measurement')
+            ->where('station', $stn)
+            ->where('date', '>=', $lastMonth)
+            ->select(
+                DB::raw("CONCAT(date, ' 12:00') as measured_at"),
+                'date',
+                DB::raw('AVG(temperature) as temp'),
+                DB::raw('AVG(dewpoint_temperature) as dewp'),
+                DB::raw('AVG(air_pressure_station) as stp'),
+                DB::raw('AVG(air_pressure_sea_level) as slp'),
+                DB::raw('AVG(visibility) as visib'),
+                DB::raw('AVG(wind_speed) as wdsp'),
+                DB::raw('AVG(percipation) as prcp')
+            )
+            ->groupBy('date')
+            ->orderBy('date')
+            ->paginate(10)
+            ->withQueryString();
+
         $tableReadings = match($period) {
-            'week' => $readingsWeek,
-            'month' => $readingsMonth,
-            'custom' => $readingsToday, // TODO: implementeer custom filtering
-            default => $readingsToday,
+            'week'   => $readingsWeekPaginated,
+            'month'  => $readingsMonthPaginated,
+            'custom' => $readingsTodayPaginated,
+            default  => $readingsTodayPaginated,
         };
 
         // Detecteer actieve storingen uit meetdata en maak automatisch records aan
@@ -324,10 +410,10 @@ class StationController extends Controller
         ]);
 
         foreach (array_keys($detectedTypes) as $type) {
-            // Alleen aanmaken als er vandaag nog geen storing van dit type bestaat
+            // Alleen aanmaken als er nog geen open/in behandeling storing van dit type bestaat
             $alreadyExists = StationFault::where('station', $stn)
                 ->where('type', $type)
-                ->whereDate('created_at', today())
+                ->whereIn('status', ['open', 'in_behandeling'])
                 ->exists();
 
             if (!$alreadyExists) {
@@ -369,31 +455,47 @@ class StationController extends Controller
         $from = $request->query('from');
         $to   = $request->query('to');
 
-        $query = DB::table('measurement')
-            ->where('station', $stn)
-            ->orderBy('date')
-            ->orderBy('time');
+        // Haal locatienaam op voor bestandsnaam
+        $locationLabel = DB::table('nearestlocation')
+            ->where('station_name', $stn)
+            ->value('name');
+        $locationSlug = $locationLabel
+            ? strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $locationLabel))
+            : 'onbekend';
 
-        if ($from) {
-            $query->where('date', '>=', $from);
-        }
-        if ($to) {
-            $query->where('date', '<=', $to);
-        }
+        // Bestandsnaam: {locatie}_{station}_{datum}.csv
+        $filename = $locationSlug . '_' . $stn . '_' . now()->format('Ymd') . '.csv';
 
-        $readings = $query->get();
-        $filename = 'station_' . $stn . '_' . now()->format('Ymd') . '.csv';
-
-        return response()->streamDownload(function () use ($readings) {
+        return response()->streamDownload(function () use ($stn, $from, $to) {
             $handle = fopen('php://output', 'w');
 
+            // Gebruik puntkomma als scheidingsteken (Excel-NL compatible)
             fputcsv($handle, [
                 'station', 'date', 'time', 'temperature', 'dewpoint_temperature',
                 'air_pressure_station', 'air_pressure_sea_level', 'visibility',
                 'wind_speed', 'percipation', 'snow_depth', 'wind_direction',
-            ]);
+            ], ';');
 
-            foreach ($readings as $row) {
+            // Query binnen de closure zodat de DB-verbinding actief blijft tijdens streaming
+            $query = DB::table('measurement')
+                ->select(
+                    'station', 'date', 'time', 'temperature', 'dewpoint_temperature',
+                    'air_pressure_station', 'air_pressure_sea_level', 'visibility',
+                    'wind_speed', 'percipation', 'snow_depth', 'wind_direction'
+                )
+                ->where('station', $stn)
+                ->orderBy('date')
+                ->orderBy('time');
+
+            if ($from) {
+                $query->where('date', '>=', $from);
+            }
+            if ($to) {
+                $query->where('date', '<=', $to);
+            }
+
+            // Gebruik cursor() voor geheugenefficiënte verwerking van grote datasets
+            foreach ($query->cursor() as $row) {
                 fputcsv($handle, [
                     $row->station,
                     $row->date,
@@ -405,12 +507,12 @@ class StationController extends Controller
                     $row->visibility,
                     $row->wind_speed,
                     $row->percipation,
-                    $row->snow_depth,
+                    $row->snow_depth ?? '',
                     $row->wind_direction,
-                ]);
+                ], ';');
             }
 
             fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv']);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 }

@@ -7,7 +7,6 @@
 @section('title', 'Abonnementaanbod')
 @section('eyebrow', 'Abonnementenaanbod')
 @section('page-title', 'Beschikbare abonnementtypes')
-@section('page-subtitle', 'Overzicht van de abonnementsvormen die IWA aanbiedt.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('subscriptions.index') }}">Terug naar abonnementen</a>

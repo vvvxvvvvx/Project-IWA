@@ -15,7 +15,6 @@
 @section('title', $company ? 'Bedrijf wijzigen' : 'Bedrijf toevoegen')
 @section('eyebrow', 'Klantenbeheer')
 @section('page-title', $company ? 'Bedrijf wijzigen' : 'Bedrijf toevoegen')
-@section('page-subtitle', 'Wijzig alleen de velden die nodig zijn, zodat de groepsstructuur overzichtelijk blijft.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ $company ? route('companies.show', $company->id) : route('companies.index') }}">Terug</a>

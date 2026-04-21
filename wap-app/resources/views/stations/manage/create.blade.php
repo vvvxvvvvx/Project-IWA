@@ -4,7 +4,6 @@
 @section('title', 'Nieuw station aanmaken')
 @section('eyebrow', 'Stationsbeheer')
 @section('page-title', 'Nieuw station aanmaken')
-@section('page-subtitle', 'Vul de gegevens in om een nieuw weerstation toe te voegen.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('stations.manage.index') }}">Terug naar beheer</a>

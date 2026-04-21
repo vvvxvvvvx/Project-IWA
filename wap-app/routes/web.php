@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/stations/storingen/offline', [StationController::class, 'faultsOffline'])->name('stations.faults.offline');
         Route::get('/stations/storingen/ontbrekende-data', [StationController::class, 'faultsMissing'])->name('stations.faults.missing');
         Route::get('/stations/storingen/temperatuurcorrecties', [StationController::class, 'faultsTemperature'])->name('stations.faults.temperature');
+        Route::get('/stations/compare', [StationCompareController::class, 'index'])->name('stations.compare');
         Route::get('/stations/{stn}', [StationController::class, 'show'])->name('stations.show');
         Route::get('/stations/{stn}/download', [StationController::class, 'download'])->name('stations.download');
     });

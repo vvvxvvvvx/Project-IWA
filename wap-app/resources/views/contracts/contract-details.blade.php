@@ -3,7 +3,6 @@
 @section('title', $contract->identifier)
 @section('eyebrow', 'Contractdetail')
 @section('page-title', $contract->identifier)
-@section('page-subtitle', 'Zelfstandig contractrecord met eigen contractgebruikers, querycriteria, meetdatafilters en contract-endpoints.')
 
 
 @section('back-button')

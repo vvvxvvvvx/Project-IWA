@@ -3,7 +3,6 @@
 @section('title', 'Contracten')
 @section('eyebrow', 'Contractbeheer')
 @section('page-title', 'Contracten')
-@section('page-subtitle', 'Zelfstandig contractoverzicht. Deze pagina leest alleen uit de contractentabellen en toont geen abonnementen meer.')
 
 @section('back-button')
     <div class="inline-form">
@@ -30,7 +29,6 @@
     <div class="panel-header panel-header-stack">
         <div>
             <h2>Alle contracten</h2>
-            <p class="muted">De contractlaag is nu losgekoppeld van abonnementen. Alleen echte contractrecords worden hier getoond.</p>
         </div>
     </div>
     <div class="table-wrapper">

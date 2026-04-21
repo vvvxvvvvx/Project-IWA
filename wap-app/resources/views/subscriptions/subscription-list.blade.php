@@ -9,7 +9,6 @@
 @section('title', 'Abonnementen')
 @section('eyebrow', 'Abonnementen & klanttoegang')
 @section('page-title', 'Abonnementenoverzicht')
-@section('page-subtitle', 'Welke bedrijven gekoppeld zijn, welk aanbod actief is en welke stations per abonnement beschikbaar zijn.')
 
 
 @section('content')
@@ -24,7 +23,6 @@
     <div class="panel-header panel-header-stack">
         <div>
             <h2>Alle abonnementen</h2>
-            <p class="muted">Per klant welk abonnement actief is, wat de looptijd is, hoeveel stations gekoppeld zijn en welk token bij de REST-laag hoort.</p>
         </div>
         <div class="inline-form">
             <span class="info-pill">Omzetindicatie: &euro; {{ number_format($summary['total_revenue'], 2, ',', '.') }}</span>
@@ -61,7 +59,6 @@
     <div class="panel-header panel-header-stack">
         <div>
             <h2>Abonnementtypes</h2>
-            <p class="muted">Beheer van de beschikbare abonnementsvormen.</p>
         </div>
         <a class="secondary-button compact-button" href="{{ route('subscription-types.create') }}">Type toevoegen</a>
     </div>

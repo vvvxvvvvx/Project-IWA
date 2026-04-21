@@ -4,7 +4,6 @@
 @section('title', 'Ontbrekende data')
 @section('eyebrow', 'Analyse & monitoring')
 @section('page-title', 'Ontbrekende meetdata')
-@section('page-subtitle', 'Stations waarbij één of meer meetvelden ontbreken in de ontvangen data.')
 
 @section('back-button')
     <a class="secondary-button" href="{{ route('stations.faults') }}">Terug naar storingen</a>

@@ -7,7 +7,6 @@
 @section('title', 'Bedrijven')
 @section('eyebrow', 'Klantenbeheer')
 @section('page-title', 'Bedrijvenoverzicht')
-@section('page-subtitle', 'Overzicht van alle bedrijven zodat medewerkers snel een relatie kunnen opzoeken.')
 
 
 @section('content')
