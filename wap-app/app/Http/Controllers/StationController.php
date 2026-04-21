@@ -76,7 +76,6 @@ class StationController extends Controller
 
     public function faults()
     {
-        // Stap 1: aggregeer measurement-data per station (één keer, efficiënt)
         $measurementStats = DB::table('measurement')
             ->select(
                 'station',
@@ -86,7 +85,6 @@ class StationController extends Controller
             )
             ->groupBy('station');
 
-        // Stap 2: aggregeer storingsvlaggen per station vanuit original_measurement
         $faultStats = DB::table('original_measurement as om')
             ->join('measurement as m', 'm.id', '=', 'om.corrected_measurement')
             ->select(
@@ -96,7 +94,6 @@ class StationController extends Controller
             )
             ->groupBy('m.station');
 
-        // Stap 3: join de kleine subqueries aan station — geen grote kruistabel meer
         $stations = DB::table('station as s')
             ->leftJoin('nearestlocation as nl', 's.name', '=', 'nl.station_name')
             ->leftJoin('country as c', 'c.country_code', '=', 'nl.country_code')
@@ -143,7 +140,8 @@ class StationController extends Controller
             ->groupBy('station.name', 'nl.name', 'c.country')
             ->havingRaw("CASE WHEN MAX(m.date) >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END = 0")
             ->orderBy('station.name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view('stations.station-offline', ['stations' => $stations]);
     }
@@ -166,7 +164,8 @@ class StationController extends Controller
             ->groupBy('station.name', 'nl.name', 'c.country')
             ->havingRaw("MAX(CASE WHEN om.missing_field IS NOT NULL THEN 1 ELSE 0 END) = 1")
             ->orderBy('station.name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view('stations.station-missing', ['stations' => $stations]);
     }
@@ -189,7 +188,8 @@ class StationController extends Controller
             ->groupBy('station.name', 'nl.name', 'c.country')
             ->havingRaw("MAX(CASE WHEN om.inavlid_temperature IS NOT NULL THEN 1 ELSE 0 END) = 1")
             ->orderBy('station.name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view('stations.station-temperature', ['stations' => $stations]);
     }

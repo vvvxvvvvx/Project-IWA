@@ -308,11 +308,6 @@ class DashboardController extends Controller
             ];
         });
 
-        // Altijd live ophalen (niet gecached), zodat het dashboard altijd actueel is
-        $activeStoringen = in_array('view_stations', $userTasks)
-            ? DB::table('station_fault')->whereIn('status', ['open', 'in_behandeling'])->count()
-            : null;
-
         // Filter cached data to only include what this user is allowed to see
         $canViewStations     = in_array('view_stations', $userTasks);
         $canViewSubscriptions = in_array('view_subscriptions', $userTasks);
@@ -339,8 +334,6 @@ class DashboardController extends Controller
         if (!$canViewSubscriptions) {
             $filtered['overview']['active_subscriptions'] = null;
         }
-
-        $filtered['overview']['active_storingen'] = $activeStoringen;
 
         return array_merge($filtered, [
             'displayName' => $user

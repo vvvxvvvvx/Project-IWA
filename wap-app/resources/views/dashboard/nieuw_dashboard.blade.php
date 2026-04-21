@@ -87,17 +87,6 @@
             </div>
         </div>
 
-        @php $storingen = (int)($overview['active_storingen'] ?? 0); @endphp
-        <a href="{{ route('stations.faults') }}" class="metric-card" style="text-decoration:none; color:inherit; cursor:pointer; transition: box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.10)'" onmouseout="this.style.boxShadow=''">
-            <div class="metric-icon">⚠</div>
-            <div>
-                <span class="metric-label">Actieve storingen</span>
-                <strong class="metric-value">{{ $storingen }}</strong>
-                <span class="metric-change {{ $storingen === 0 ? 'positive' : ($storingen <= 5 ? 'warning' : 'negative') }}">
-                    {{ $storingen === 0 ? 'Geen storingen' : ($storingen === 1 ? '1 storing open' : $storingen . ' storingen open') }}
-                </span>
-            </div>
-        </a>
         @endif
 
     </section>

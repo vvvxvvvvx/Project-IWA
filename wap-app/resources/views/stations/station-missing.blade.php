@@ -15,10 +15,10 @@
         <div>
             <h2>Stations met ontbrekende data</h2>
             <p class="muted" style="margin-top:0.25rem;">
-                {{ $stations->count() }} {{ $stations->count() === 1 ? 'station' : 'stations' }} gevonden
+                {{ $stations->total() }} {{ $stations->total() === 1 ? 'station' : 'stations' }} gevonden
             </p>
         </div>
-        <a href="{{ route('stations.faults') }}" class="secondary-button">Terug naar storingen</a>
+        <a href="{{ route('stations.index') }}" class="secondary-button">Terug naar stations</a>
     </div>
 
     <div class="table-wrapper">
@@ -50,6 +50,9 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+    <div style="margin-top: 15px;">
+        {{ $stations->links() }}
     </div>
 </article>
 @endsection
