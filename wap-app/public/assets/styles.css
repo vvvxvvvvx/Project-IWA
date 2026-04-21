@@ -405,23 +405,6 @@ body {
 .td-numeric { text-align: right; font-variant-numeric: tabular-nums; }
 .th-numeric { text-align: right; }
 
-/* === BREADCRUMB === */
-.breadcrumb {
-    max-width: 1320px;
-    margin: 10px auto 0;
-    padding: 0 24px;
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    font-size: 13px;
-    color: var(--muted);
-    flex-wrap: wrap;
-}
-.breadcrumb a { color: var(--muted); text-decoration: none; transition: color .15s; }
-.breadcrumb a:hover { color: var(--text); }
-.breadcrumb-sep { color: var(--border); user-select: none; }
-.breadcrumb-current { color: var(--text); font-weight: 600; }
-
 /* === FILTER BAR === */
 .filter-bar {
     display: flex;
