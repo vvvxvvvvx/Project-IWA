@@ -77,7 +77,7 @@
                     Je kunt hier direct zien welke contactpersonen al zijn gekoppeld.
                 </p>
             </div>
-            <a class="primary-button" href="{{ route('companies.contacts.create', $company->id) }}">Contactpersoon toevoegen</a>
+            <a class="secondary-button compact-button" href="{{ route('companies.contacts.create', $company->id) }}">Contactpersoon toevoegen</a>
         </div>
 
         <div class="table-wrapper">
@@ -101,12 +101,12 @@
                             <td>{{ $contact->email ?? '-' }}</td>
                             <td>{{ $contact->phone ?? '-' }}</td>
                             <td>
-                                <div class="inline-form">
-                                    <a class="secondary-button" href="{{ route('companies.contacts.edit', [$company->id, $contact->id]) }}">Wijzigen</a>
+                                <div class="table-actions">
+                                    <a class="secondary-button compact-button" href="{{ route('companies.contacts.edit', [$company->id, $contact->id]) }}">Bewerken</a>
                                     <form method="POST" action="{{ route('companies.contacts.destroy', [$company->id, $contact->id]) }}" onsubmit="return confirm('Contactpersoon verwijderen?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="secondary-button" type="submit">Verwijderen</button>
+                                        <button class="danger-button compact-button" type="submit">Verwijderen</button>
                                     </form>
                                 </div>
                             </td>

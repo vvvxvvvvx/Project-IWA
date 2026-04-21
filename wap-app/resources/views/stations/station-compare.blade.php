@@ -95,7 +95,7 @@
 
             <div style="display:flex; gap:0.5rem; align-items:flex-end;">
                 <button type="submit" class="primary-button">Vergelijken</button>
-                <a href="{{ route('stations.compare') }}" class="secondary-button">Reset</a>
+                <a href="{{ route('stations.compare') }}" class="secondary-button">Resetten</a>
             </div>
         </div>
     </form>

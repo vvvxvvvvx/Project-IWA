@@ -17,13 +17,14 @@
     <a class="secondary-button" href="{{ route('companies.index') }}">Terug naar bedrijven</a>
 @endsection
 
+
 @section('content')
 <section class="panel">
     <div class="panel-header panel-header-stack">
         <h2>Bedrijfsgegevens</h2>
         <div class="inline-form">
-            <a class="secondary-button" href="{{ route('companies.edit', $company->id) }}">Bedrijf wijzigen</a>
-            <a class="primary-button" href="{{ route('companies.contacts.create', $company->id) }}">Contactpersoon toevoegen</a>
+            <a class="secondary-button compact-button" href="{{ route('companies.edit', $company->id) }}">Bedrijf bewerken</a>
+            <a class="secondary-button compact-button" href="{{ route('companies.contacts.create', $company->id) }}">Contactpersoon toevoegen</a>
         </div>
     </div>
     <div class="details-grid">
@@ -58,18 +59,25 @@
                     <td>{{ $contact->email ?? '-' }}</td>
                     <td>{{ $contact->phone ?? '-' }}</td>
                     <td>
-                        <div class="inline-form">
-                            <a class="secondary-button" href="{{ route('companies.contacts.edit', [$company->id, $contact->id]) }}">Wijzigen</a>
+                        <div class="table-actions">
+                            <a class="secondary-button compact-button" href="{{ route('companies.contacts.edit', [$company->id, $contact->id]) }}">Bewerken</a>
                             <form method="POST" action="{{ route('companies.contacts.destroy', [$company->id, $contact->id]) }}" onsubmit="return confirm('Contactpersoon verwijderen?');">
                                 @csrf
                                 @method('DELETE')
-                                <button class="secondary-button" type="submit">Verwijderen</button>
+                                <button class="danger-button compact-button" type="submit">Verwijderen</button>
                             </form>
                         </div>
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" class="muted">Geen contactpersonen gevonden.</td></tr>
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <span class="muted">Nog geen contactpersonen gevonden.</span>
+                            <a class="secondary-button compact-button" href="{{ route('companies.contacts.create', $company->id) }}">Contactpersoon toevoegen</a>
+                        </div>
+                    </td>
+                </tr>
                 @endforelse
             </tbody>
         </table>

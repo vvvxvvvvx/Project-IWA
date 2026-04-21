@@ -11,9 +11,6 @@
 @section('page-title', 'Abonnementenoverzicht')
 @section('page-subtitle', 'Welke bedrijven gekoppeld zijn, welk aanbod actief is en welke stations per abonnement beschikbaar zijn.')
 
-@section('back-button')
-    <a class="secondary-button" href="{{ route('dashboard') }}">Terug naar dashboard</a>
-@endsection
 
 @section('content')
 <section class="summary-grid">
@@ -31,7 +28,7 @@
         </div>
         <div class="inline-form">
             <span class="info-pill">Omzetindicatie: &euro; {{ number_format($summary['total_revenue'], 2, ',', '.') }}</span>
-            <a class="primary-button" href="{{ route('subscriptions.create') }}">Abonnement toevoegen</a>
+            <a class="secondary-button compact-button" href="{{ route('subscriptions.create') }}">Abonnement toevoegen</a>
         </div>
     </div>
     <div class="table-wrapper">
@@ -51,7 +48,7 @@
                     <td>&euro; {{ number_format($sub->price, 2, ',', '.') }}</td>
                     <td>{{ $sub->station_count }}</td>
                     <td><code>{{ $sub->token }}</code></td>
-                    <td><a class="secondary-button" href="{{ route('subscriptions.edit', $sub->identifier) }}">Wijzigen</a></td>
+                    <td><a class="secondary-button compact-button" href="{{ route('subscriptions.edit', $sub->identifier) }}">Bewerken</a></td>
                 </tr>
                 @endforeach
             </tbody>
@@ -66,7 +63,7 @@
             <h2>Abonnementtypes</h2>
             <p class="muted">Beheer van de beschikbare abonnementsvormen.</p>
         </div>
-        <a class="primary-button" href="{{ route('subscription-types.create') }}">Type toevoegen</a>
+        <a class="secondary-button compact-button" href="{{ route('subscription-types.create') }}">Type toevoegen</a>
     </div>
     <div class="table-wrapper">
         <table class="data-table">
@@ -80,7 +77,7 @@
                         <td>{{ $type->description ?? '-' }}</td>
                         <td>&euro; {{ number_format($type->price_per_station, 2, ',', '.') }}</td>
                         <td>{{ $type->subscriber_count }}</td>
-                        <td><a class="secondary-button" href="{{ route('subscription-types.edit', $type->id) }}">Wijzigen</a></td>
+                        <td><a class="secondary-button compact-button" href="{{ route('subscription-types.edit', $type->id) }}">Bewerken</a></td>
                     </tr>
                 @endforeach
             </tbody>

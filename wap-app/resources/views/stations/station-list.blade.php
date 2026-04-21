@@ -6,9 +6,6 @@
 @section('page-title', 'Stationsoverzicht')
 @section('page-subtitle', 'Duidelijke lijst van alle weerstations met locatie, laatste meting en status.')
 
-@section('back-button')
-    <a class="secondary-button" href="{{ route('dashboard') }}">Terug naar dashboard</a>
-@endsection
 
 @section('content')
 <article class="panel">
@@ -23,34 +20,32 @@
 
     {{-- Hier tot beneden is de nieuwe FILTER sectie toegevoegd voor de Land en Plaats filters. --}}
 
-    <form method="GET" action="{{ route('stations.index') }}" class="filter-form" style="margin-bottom: 1rem;">
-        <div style="display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;">
-            <div>
-                <label for="country" style="display:block; font-weight:600; margin-bottom:0.35rem;">Filter op land</label>
-                <select name="country" id="country" class="form-control" onchange="this.form.submit()">
-                    @foreach ($countries as $c)
-                        <option value="{{ $c->country_code }}" {{ $selectedCountry === $c->country_code ? 'selected' : '' }}>
-                            {{ $c->country }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+    <form method="GET" action="{{ route('stations.index') }}" class="filter-bar">
+        <label for="country">
+            Filter op land
+            <select name="country" id="country" onchange="this.form.submit()">
+                @foreach ($countries as $c)
+                    <option value="{{ $c->country_code }}" {{ $selectedCountry === $c->country_code ? 'selected' : '' }}>
+                        {{ $c->country }}
+                    </option>
+                @endforeach
+            </select>
+        </label>
 
-            <div>
-                <label for="location" style="display:block; font-weight:600; margin-bottom:0.35rem;">Filter op plaats</label>
-                <select name="location" id="location" class="form-control" onchange="this.form.submit()">
-                    <option value="">Alle plaatsen</option>
-                    @foreach ($locations as $loc)
-                        <option value="{{ $loc->name }}" {{ $selectedLocation === $loc->name ? 'selected' : '' }}>
-                            {{ $loc->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+        <label for="location">
+            Filter op plaats
+            <select name="location" id="location" onchange="this.form.submit()">
+                <option value="">Alle plaatsen</option>
+                @foreach ($locations as $loc)
+                    <option value="{{ $loc->name }}" {{ $selectedLocation === $loc->name ? 'selected' : '' }}>
+                        {{ $loc->name }}
+                    </option>
+                @endforeach
+            </select>
+        </label>
 
-            <div style="display:flex; gap:0.5rem;">
-                <a href="{{ route('stations.index') }}" class="secondary-button">Reset</a>
-            </div>
+        <div class="filter-bar-actions">
+            <a href="{{ route('stations.index') }}" class="secondary-button compact-button">Resetten</a>
         </div>
     </form>
 
@@ -106,13 +101,17 @@
                         @if ((int)($station->is_online ?? 0) === 1)
                             <span class="status-badge success">Online</span>
                         @else
-                            <span class="status-badge warning">Offline</span>
+                            <span class="status-badge negative">Offline</span>
                         @endif
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="12" class="muted" style="text-align:center;">Geen stations gevonden voor deze filter.</td>
+                    <td colspan="12">
+                        <div class="empty-state">
+                            <span class="muted">Geen stations gevonden voor deze filter.</span>
+                        </div>
+                    </td>
                 </tr>
                 @endforelse
             </tbody>

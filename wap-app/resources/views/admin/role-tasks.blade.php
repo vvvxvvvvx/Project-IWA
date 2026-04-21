@@ -6,23 +6,18 @@
 @section('page-title', 'Roltaken Overzicht')
 @section('page-subtitle', 'Beheer de taken die bij elke rol horen.')
 
-@section('back-button')
-    <a class="secondary-button" href="{{ route('dashboard') }}">Terug naar dashboard</a>
-@endsection
 
 @section('content')
 
 @foreach ($roles as $role)
 <article class="panel" style="margin-bottom: 1.5rem;">
-    <div class="panel-header">
+    <div class="panel-header panel-header-stack">
         <div>
             <h2>{{ $role->role }}</h2>
             <p class="muted">Taken voor de rol "{{ $role->role }}".</p>
-            <p class="button-wrapper">
-                <button type="button" class="primary-button"
-                    onclick="toggleInlineForm('toevoegen-form-{{ $role->id }}')">Taak toevoegen</button>
-            </p>
         </div>
+        <button type="button" class="secondary-button compact-button"
+            onclick="toggleInlineForm('toevoegen-form-{{ $role->id }}')">Taak toevoegen</button>
     </div>
 
     {{-- Inline toevoegen-formulier, verschijnt direct onder de knop --}}
@@ -63,8 +58,7 @@
                         <th>ID</th>
                         <th>Taaknaam</th>
                         <th>Beschrijving</th>
-                        <th>Acties</th>
-                        <th> </th>
+                        <th style="width:1%;white-space:nowrap;">Acties</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,19 +67,19 @@
                         <td>{{ $task->id }}</td>
                         <td>{{ $task->name }}</td>
                         <td>{{ $task->description ?? '—' }}</td>
-                        <td>
-                            <button type="button" class="primary-button"
-                                onclick="toggleInlineForm('bewerken-form-{{ $task->id }}')">Bewerken</button>
-                        </td>
-                        <td>
-                            <button type="button" class="primary-button"
-                                onclick="toggleInlineForm('verwijder-form-{{ $task->id }}')">Verwijderen</button>
+                        <td style="white-space:nowrap;">
+                            <div class="table-actions" style="flex-wrap:nowrap;">
+                                <button type="button" class="secondary-button compact-button"
+                                    onclick="toggleInlineForm('bewerken-form-{{ $task->id }}')">Bewerken</button>
+                                <button type="button" class="danger-button compact-button"
+                                    onclick="toggleInlineForm('verwijder-form-{{ $task->id }}')">Verwijderen</button>
+                            </div>
                         </td>
                     </tr>
 
                     {{-- Inline bewerken-formulier, verschijnt direct onder deze rij --}}
                     <tr id="bewerken-form-{{ $task->id }}" class="inline-form-row" style="display:none;">
-                        <td colspan="5">
+                        <td colspan="4">
                             <div class="inline-form">
                                 <h3>Taak bewerken</h3>
                                 <form method="POST" action="{{ route('role-tasks.update', ['id' => $task->id]) }}">
@@ -113,7 +107,7 @@
 
                     {{-- Inline verwijder-formulier, verschijnt direct onder deze rij --}}
                     <tr id="verwijder-form-{{ $task->id }}" class="inline-form-row" style="display:none;">
-                        <td colspan="5">
+                        <td colspan="4">
                             <div class="inline-form">
                                 <h3>Taak verwijderen</h3>
                                 <p>Voer uw wachtwoord in om "<strong>{{ $task->name }}</strong>" te verwijderen.</p>
@@ -123,9 +117,9 @@
                                     <input type="password" name="password" placeholder="Wachtwoord" required
                                         style="width:100%; padding:0.5rem; margin:0.75rem 0; box-sizing:border-box;">
                                     <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
-                                        <button type="button" class="secondary-button"
+                                        <button type="button" class="secondary-button compact-button"
                                             onclick="toggleInlineForm('verwijder-form-{{ $task->id }}')">Annuleren</button>
-                                        <button type="submit" class="primary-button">Bevestigen</button>
+                                        <button type="submit" class="danger-button compact-button">Bevestigen</button>
                                     </div>
                                 </form>
                             </div>

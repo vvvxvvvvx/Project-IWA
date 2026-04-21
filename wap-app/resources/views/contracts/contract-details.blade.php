@@ -5,11 +5,12 @@
 @section('page-title', $contract->identifier)
 @section('page-subtitle', 'Zelfstandig contractrecord met eigen contractgebruikers, querycriteria, meetdatafilters en contract-endpoints.')
 
+
 @section('back-button')
     <div class="inline-form">
         <a class="secondary-button compact-button" href="{{ route('contracts.index') }}">Terug naar contracten</a>
         @if(auth()->user()?->hasTask('manage_contracts'))
-            <a class="secondary-button compact-button" href="{{ route('contracts.edit', $contract->identifier) }}">Wijzigen</a>
+            <a class="secondary-button compact-button" href="{{ route('contracts.edit', $contract->identifier) }}">Bewerken</a>
             <form method="POST" action="{{ route('contracts.destroy', $contract->identifier) }}" onsubmit="return confirm('Weet je zeker dat je dit contract wilt verwijderen?');">
                 @csrf
                 @method('DELETE')
@@ -107,7 +108,7 @@
             <div class="inline-manage-field"><label>Status</label><input name="status" value="{{ old('status', 'Actief') }}"></div>
             <div class="inline-manage-field inline-manage-full"><label>Notities</label><textarea name="notes">{{ old('notes') }}</textarea></div>
         </div>
-        <div class="inline-manage-actions"><button class="primary-button compact-button" type="submit">Gebruiker toevoegen</button></div>
+        <div class="inline-manage-actions"><button class="secondary-button compact-button" type="submit">Gebruiker toevoegen</button></div>
     </form>
     @endif
 
@@ -238,7 +239,7 @@
         <div class="contract-query-card contract-query-card-wide">
             <div class="inline-manage-field contract-query-field-full"><label>Notities</label><textarea name="notes">{{ old('notes') }}</textarea></div>
         </div>
-        <div class="contract-query-actions"><button class="primary-button compact-button" type="submit">Query toevoegen</button></div>
+        <div class="contract-query-actions"><button class="secondary-button compact-button" type="submit">Query toevoegen</button></div>
     </form>
     @endif
 

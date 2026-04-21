@@ -24,7 +24,7 @@
             <h2>Alle weerstations</h2>
             <p class="muted">{{ $stations->count() }} station(s) gevonden.</p>
         </div>
-        <a href="{{ route('stations.manage.create') }}" class="primary-button">+ Nieuw station</a>
+        <a href="{{ route('stations.manage.create') }}" class="secondary-button compact-button">+ Nieuw station</a>
     </div>
 
     {{-- Zoekfilter --}}
@@ -47,7 +47,7 @@
         </div>
         <div style="display:flex;gap:0.5rem;">
             <button type="submit" class="primary-button">Zoeken</button>
-            <a href="{{ route('stations.manage.index') }}" class="secondary-button">Reset</a>
+            <a href="{{ route('stations.manage.index') }}" class="secondary-button">Resetten</a>
         </div>
     </form>
 
@@ -74,13 +74,19 @@
                     <td>{{ $s->longitude }}</td>
                     <td>{{ $s->elevation }}</td>
                     <td style="white-space:nowrap;">
-                        <a href="{{ route('stations.manage.show', $s->stn) }}" class="secondary-button" style="padding:4px 10px;font-size:12px;">Bekijken</a>
-                        <a href="{{ route('stations.manage.edit', $s->stn) }}" class="primary-button" style="padding:4px 10px;font-size:12px;margin-left:4px;">Wijzigen</a>
+                        <div class="table-actions">
+                            <a href="{{ route('stations.manage.show', $s->stn) }}" class="secondary-button compact-button">Bekijken</a>
+                            <a href="{{ route('stations.manage.edit', $s->stn) }}" class="secondary-button compact-button">Bewerken</a>
+                        </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="muted" style="text-align:center;">Geen stations gevonden.</td>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <span class="muted">Geen stations gevonden.</span>
+                        </div>
+                    </td>
                 </tr>
                 @endforelse
             </tbody>
