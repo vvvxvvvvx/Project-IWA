@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ContractUserController;
 use App\Http\Controllers\Api\SubscriptionStationController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\StationController;
+use App\Http\Controllers\Api\WeatherApiController;
 use App\Http\Controllers\MeasurementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -52,4 +53,11 @@ Route::middleware(['auth.contract:admin'])->group(function () {
     Route::post('/IWA/contracten/{identifier}/user', [ContractUserController::class, 'store']);
     Route::put('/IWA/contracten/{identifier}/user/{user_identifier}', [ContractUserController::class, 'update']);
     Route::delete('/IWA/contracten/{identifier}/user/{user_identifier}', [ContractUserController::class, 'destroy']);
+});
+
+// ── Weather API (koppeling met externe applicaties) ──────────────────────────
+// Authenticatie via X-API-Key header (zie WEATHER_API_KEY in .env)
+Route::middleware(['auth.apikey'])->prefix('weather/asia')->group(function () {
+    Route::get('/stations',     [WeatherApiController::class, 'stations']);
+    Route::get('/measurements', [WeatherApiController::class, 'measurements']);
 });

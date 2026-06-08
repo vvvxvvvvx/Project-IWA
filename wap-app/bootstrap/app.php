@@ -15,8 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['postWeatherData']);
         $middleware->alias([
             'auth.subscription' => \App\Http\Middleware\VerifySubscriptionToken::class,
-            'auth.contract' => \App\Http\Middleware\VerifyContractJwt::class,
-            'task' => \App\Http\Middleware\CheckTask::class,
+            'auth.contract'     => \App\Http\Middleware\VerifyContractJwt::class,
+            'task'              => \App\Http\Middleware\CheckTask::class,
+            'auth.apikey'       => \App\Http\Middleware\VerifyApiKey::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
